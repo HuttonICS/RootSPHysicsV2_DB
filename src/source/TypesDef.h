@@ -194,6 +194,7 @@ inline tfloat3 MinValues(const tfloat3& a, const tfloat3& b){ return(TFloat3((a.
 inline tfloat3 MaxValues(const tfloat3& a, const tfloat3& b){ return(TFloat3((a.x>=b.x? a.x: b.x),(a.y>=b.y? a.y: b.y),(a.z>=b.z? a.z: b.z))); }
 inline float TFloat3Get(const tfloat3& a,unsigned c){ return(!c? a.x: (c==1? a.y: a.z)); }
 inline tfloat3 TFloat3Set(const tfloat3& a,unsigned c,float v){ return(TFloat3((c? a.x: v),(c!=1? a.y: v),(c!=2? a.z: v))); }
+inline float Norme2(tfloat3 d) { return (d.x*d.x + d.y*d.y + d.z*d.z); }
 
 
 ///Structure of 2 variables of type double.
@@ -239,6 +240,7 @@ inline tdouble3 operator /(const tdouble3& a, const double& b){ return(TDouble3(
 inline tdouble3 MinValues(const tdouble3& a, const tdouble3& b){ return(TDouble3((a.x<=b.x? a.x: b.x),(a.y<=b.y? a.y: b.y),(a.z<=b.z? a.z: b.z))); }
 inline tdouble3 MaxValues(const tdouble3& a, const tdouble3& b){ return(TDouble3((a.x>=b.x? a.x: b.x),(a.y>=b.y? a.y: b.y),(a.z>=b.z? a.z: b.z))); }
 inline double Norme2(tdouble3 d) { return (d.x*d.x + d.y*d.y + d.z*d.z); }
+
 
 ///Converts \ref tuint3 to \ref tint3.
 inline tint3 ToTInt3(const tuint3& v){ return(TInt3(int(v.x),int(v.y),int(v.z))); }
@@ -420,13 +422,13 @@ inline float max_M(tsymatrix3f v) {  return max_M(max_M(max_M(v.xx, v.xy), v.xz)
 }tvect3d;
 
 inline tvect3d TVect3d() { return {TDouble3(0), TDouble3(0), TDouble3(0)}; };
-inline tvect3d TVect3d(tdouble3 a, tdouble3 b, tdouble3 c) { return { a, b, c }; }
-inline tdouble3 MainAxis(tmatrix3f e) { 
-	double normeu = Norme2(e.a);
-	double normev = Norme2(e.b);
-	double normew = Norme2(e.c);
-	return (normeu > normev ? (normeu > normew ? e.a : e.c) : (normev > normew ? e.b : e.c));
-}*/
+inline tvect3d TVect3d(tdouble3 a, tdouble3 b, tdouble3 c) { return { a, b, c }; }*/
+inline int MainAxis(tmatrix3f e) { 
+	float normeu = Norme2(TFloat3(e.a11,e.a12,e.a13));
+	float normev = Norme2(TFloat3(e.a21, e.a22, e.a23));
+	float normew = Norme2(TFloat3(e.a31, e.a32, e.a33));
+	return (normeu > normev ? (normeu > normew ? 1 : 3) : (normev > normew ? 2 : 3));
+}
 
 
 

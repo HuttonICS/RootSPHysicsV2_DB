@@ -200,8 +200,7 @@ void JSphSolidCpu::AllocCpuMemoryParticles(unsigned np, float over) {
 	ArraysCpu->AddArrayCount(JArraysCpu::SIZE_4B, 4); // SaveFields
 	ArraysCpu->AddArrayCount(JArraysCpu::SIZE_12B, 1); // Press3D
 	// Thibaud
-	ArraysCpu->AddArrayCount(JArraysCpu::SIZE_36B, 3); // Ellip - EllipDo
-	ArraysCpu->AddArrayCount(JArraysCpu::SIZE_36B, 2); // GradU
+	ArraysCpu->AddArrayCount(JArraysCpu::SIZE_36B, 3); // Ellip - EllipDo - GradU
 
 
 	//-Shows the allocated memory.
@@ -258,7 +257,6 @@ void JSphSolidCpu::ResizeCpuMemoryParticles(unsigned npnew) {
 	ArraysCpu->Free(JauTauM1c2_M);
 	//Thibaud
 	ArraysCpu->Free(Ellipc_T);
-	ArraysCpu->Free(Gradu_T);
 
 	//-Resizes CPU memory allocation.
 	const double mbparticle = (double(MemCpuParticles) / (1024 * 1024)) / CpuParticlesSize; //-MB por particula.
@@ -285,7 +283,6 @@ void JSphSolidCpu::ResizeCpuMemoryParticles(unsigned npnew) {
 	JauTauc2_M = ArraysCpu->ReserveSymatrix3f();
 	// Thibaud
 	Ellipc_T = ArraysCpu->ReserveMatrix3f_M();
-	Gradu_T = ArraysCpu->ReserveMatrix3f_M();
 
 	if (velrhopm1) JauTauM1c2_M = ArraysCpu->ReserveSymatrix3f();
 
@@ -367,7 +364,7 @@ void JSphSolidCpu::ReserveBasicArraysCpu() {
 	JauTauc2_M = ArraysCpu->ReserveSymatrix3f();
 	// Thibaud
 	Ellipc_T = ArraysCpu->ReserveMatrix3f_M();
-	Gradu_T = ArraysCpu->ReserveMatrix3f_M();
+	//Gradu_T = ArraysCpu->ReserveMatrix3f_M();
 }
 
 //==============================================================================
@@ -532,7 +529,7 @@ unsigned JSphSolidCpu::GetParticlesData_M(unsigned n, unsigned pini, bool cellor
 		//printf("\nJSphSolidCpu::GetParticlesData_M--- norme ellip[0].c : %1.7f\n", normec);
 		//printf("volume   ellip[0] : %1.7f    vol[0] : %1.7f", (4/3*3.1415*normea0*normeb0*normec0) / (4 / 3 * 3.1415*0.001), (Massc_M[0]/Velrhopc[0].w) / (8 / RhopZero));
 		//printf("\nvolume ellip[n/2] : %1.7f  vol[n/2] : %1.7f\n", (4 / 3 * 3.1415*normeaN2*normebN2*normecN2) / (4 / 3 * 3.1415*0.001), (Massc_M[n / 2] / Velrhopc[n / 2].w) / (8 / RhopZero));
-		printf("volume   ellip : %1.7f    particles : %1.7f\n", volumeTotalEllip/n , volumeTotalParticles/n);
+		//printf("volume   ellip : %1.7f    particles : %1.7f\n", volumeTotalEllip/n , volumeTotalParticles/n);
 
 		memcpy(ellip, Ellipc_T + pini, sizeof(tmatrix3f)*n);
 	}
@@ -653,8 +650,6 @@ void JSphSolidCpu::InitRun() {
 		Ellipc_T[p].a32 = 0;
 		Ellipc_T[p].a33 = Dp / 2;
 	}
-	// gradU
-	memset(Gradu_T, 0, sizeof(tmatrix3f)*Np);
 
 	if (UseDEM)DemDtForce = DtIni; //(DEM)
 	if (CaseNfloat)InitFloating();

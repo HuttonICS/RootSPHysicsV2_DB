@@ -2146,9 +2146,9 @@ template<bool psingle, TpKernel tker, TpFtMode ftmode, bool lamsps, TpDeltaSph t
 	printf("1");
 		//-Executes particle interactions.
 		unsigned npf = np - npb;
-		const int hdiv = (cellmode == CELLMODE_H ? 2 : 1);
+		//const int hdiv = (cellmode == CELLMODE_H ? 2 : 1);
 		const int4 nc = make_int4(int(ncells.x), int(ncells.y), int(ncells.z), int(ncells.x*ncells.y));
-		const unsigned cellfluid = nc.w*nc.z + 1;
+//		const unsigned cellfluid = nc.w*nc.z + 1;
 		const int3 cellzero = make_int3(cellmin.x, cellmin.y, cellmin.z);
 		//-Interaction Fluid-Fluid & Fluid-Bound.
 		if (npf) {
@@ -3941,9 +3941,9 @@ __global__ void KerPressPoreC_L(
 		 Press3Dc[p].y = Anisotropy.y * (CteB * (pow(rhop_r0, Gamma) - 1.0f));
 		 Press3Dc[p].z = Anisotropy.z * (CteB * (pow(rhop_r0, Gamma) - 1.0f));
 
-		 float distance2x = posxy[p].x - LocDiv_M.x;
-		 float distance2y = posxy[p].y - LocDiv_M.y;
-		 float distance2z = posz[p] - LocDiv_M.z;
+		// float distance2x = posxy[p].x - LocDiv_M.x;
+		// float distance2y = posxy[p].y - LocDiv_M.y;
+		// float distance2z = posz[p] - LocDiv_M.z;
 		 Porec_M[p] = PoreZero;
 		//Porec_M[p] = PoreZero / (1 + exp(-(TimeStep-2))) * exp(-(pow(distance2x,2) + pow(distance2.y, 2) + pow(distance2.z, 2)) / Spread_M);
 	//Porec_M[p] = PoreZero / sqrt(2 * Spread_M*PI) * exp(-(pow(distance2x, 2) + pow(distance2y, 2) + pow(distance2z, 2)) / Spread_M);
