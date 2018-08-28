@@ -40,6 +40,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 #include <thrust/sort.h>
 __constant__ StCteInteraction CTE;
 __constant__ CAnisotropy CTESol;
+__constant__ CCellDivL CTECDiv;
 
 namespace cuSol {
 
@@ -58,6 +59,12 @@ namespace cuSol {
 		cudaMemcpyToSymbol(CTESol, cte, sizeof(CAnisotropy));
 	}
 
+	//==============================================================================
+	/// Stores constants Lucas in GPU for Cell Div
+	//==============================================================================
+	void CteInteractionUpCD(const CCellDivL *cte) {
+		cudaMemcpyToSymbol(CTECDiv, cte, sizeof(CCellDivL));
+	}
 
 #include "FunctionsMath_ker.cu"
 
@@ -4064,5 +4071,176 @@ if (p < n) {
 	velrhopnew[p].w = (rhopnew < RhopZero ? RhopZero : rhopnew);
 }
 }
+__global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, bool *Divisionc_M, unsigned &count)
+{
+	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
+	if (p < n) {
+		float normeai = sqrt(Ellipg[p].a11*Ellipg[p].a11+ Ellipg[p].a12*Ellipg[p].a12+ Ellipg[p].a13*Ellipg[p].a13);
+		float normebi = sqrt(Ellipg[p].a21*Ellipg[p].a21 + Ellipg[p].a22*Ellipg[p].a22 + Ellipg[p].a23*Ellipg[p].a23);
+		float normeci = sqrt(Ellipg[p].a31*Ellipg[p].a31 + Ellipg[p].a32*Ellipg[p].a32 + Ellipg[p].a33*Ellipg[p].a33);
+		double vol = ((4.0 / 3.0) * 3.1415*normeai*normebi*normeci);
+		if (vol > CTE.SizeDivision_M*PI*CTE.dp*CTE.dp*CTE.dp / 6.0) {
+			Divisionc_M[p] = true;
+			//count++;
+		}
+
+	}
+}
+void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,bool *Divisionc_M,unsigned &count)
+{
+	const unsigned npf = np - npb;
+	if (npf) {
+		dim3 sgrid = cuSol::GetGridSize(np, DIVBSIZE);
+		KerCheckDivision << <sgrid, DIVBSIZE >> > (np,npb,JauEllipg,Divisionc_M,count);
+	}
+}
+
+__global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini, tuint3 cellmax
+	, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy,double *posz, float4 *velrhop, tsymatrix3f *taup
+	, bool *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1,unsigned *IndiceDiv,tmatrix3f *Ellipg)
+{
+	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
+	unsigned oldp = IndiceDiv[p];
+	if (oldp < np) {
+		const char met[] = "MarkedDivision_L";
+		float3 orientation;
+		const unsigned pnew = np + p;
+		//int numAxe = MainAxis(Ellipg[p]);
+		int numAxe = 0;
+		switch (numAxe)
+		{
+		case 1:
+			orientation.x = Ellipg[p].a11;
+			orientation.y = Ellipg[p].a12;
+			orientation.z = Ellipg[p].a13;
+			break;
+		case 2:
+			orientation.x = Ellipg[p].a21;
+			orientation.y = Ellipg[p].a22;
+			orientation.z = Ellipg[p].a23;
+			break;
+		case 3:
+			orientation.x = Ellipg[p].a31;
+			orientation.y = Ellipg[p].a32;
+			orientation.z = Ellipg[p].a33;
+			break;
+		default:
+			break;
+		}
+		tdouble3 ps = { posxy[p].x + orientation.x / 2.0
+		, posxy[p].y + orientation.y / 2.0
+		, posz[p] + orientation.z / 2.0 };
+
+		//-Calculate coordinates of cell inside of domain / Calcula coordendas de celda dentro de dominio.
+		unsigned cx = unsigned((ps.x - CTECDiv.DomPosMin.x) / CTECDiv.Scell);
+		unsigned cy = unsigned((ps.y - CTECDiv.DomPosMin.y) / CTECDiv.Scell);
+		unsigned cz = unsigned((ps.z - CTECDiv.DomPosMin.z) / CTECDiv.Scell);
+		//-Adjust coordinates of cell is they exceed maximum / Ajusta las coordendas de celda si sobrepasan el maximo.
+		cx = (cx <= cellmax.x ? cx : cellmax.x);
+		cy = (cy <= cellmax.y ? cy : cellmax.y);
+		cz = (cz <= cellmax.z ? cz : cellmax.z);
+
+		//-Record position and cell of new particles /  Graba posicion y celda de nuevas particulas.
+		posxy[pnew].x = ps.x;
+		posxy[pnew].y = ps.y;
+		posz[pnew] = ps.z;
+		dcell[pnew] = PC__Cell(CTECDiv.DomCellCode, cx, cy, cz);
+		idp[pnew] = pnew;
+		code[pnew] = code[p];
+		velrhop[pnew] = velrhop[p];
+		taup[pnew] = taup[p];
+		porep[pnew] = porep[p];
+		massp[pnew] = massp[p] / 2;
+		velrhopm1[pnew] = velrhopm1[p];
+		taupm1[pnew] = taupm1[p];
+		masspm1[pnew] = masspm1[p] / 2;
+		divisionp[pnew] = false;
+		switch (numAxe)
+		{
+		case 1:
+			Ellipg[pnew] = {
+				Ellipg[p].a11 / 2.f , Ellipg[p].a12 / 2.f , Ellipg[p].a13 / 2.f
+				, Ellipg[p].a21 , Ellipg[p].a22 , Ellipg[p].a23
+				, Ellipg[p].a31 , Ellipg[p].a32 , Ellipg[p].a33
+			};
+			break;
+		case 2:
+			Ellipg[pnew] = {
+				Ellipg[p].a11  , Ellipg[p].a12 , Ellipg[p].a13
+				, Ellipg[p].a21 / 2.0f , Ellipg[p].a22 / 2.0f, Ellipg[p].a23 / 2.0f
+				, Ellipg[p].a31 , Ellipg[p].a32 , Ellipg[p].a33
+			};
+			break;
+		case 3:
+			Ellipg[pnew] = {
+				Ellipg[p].a11 , Ellipg[p].a12 , Ellipg[p].a13
+				, Ellipg[p].a21 , Ellipg[p].a22 , Ellipg[p].a23
+				, Ellipg[p].a31 / 2.0f, Ellipg[p].a32 / 2.0f, Ellipg[p].a33 / 2.0f
+			};
+			break;
+		default:
+			break;
+		}
+		// MOVE
+		//-Get pos of particle to be duplicated / Obtiene pos de particula a duplicar.
+		ps = { posxy[p].x - orientation.x / 2.0
+		, posxy[p].y - orientation.y / 2.0
+		, posz[p] - orientation.z / 2.0 };
+
+		//-Calculate coordinates of cell inside of domain / Calcula coordendas de celda dentro de dominio.
+		cx = unsigned((ps.x - CTECDiv.DomPosMin.x) / CTECDiv.Scell);
+		cy = unsigned((ps.y - CTECDiv.DomPosMin.y) / CTECDiv.Scell);
+		cz = unsigned((ps.z - CTECDiv.DomPosMin.z) / CTECDiv.Scell);
+		//-Adjust coordinates of cell is they exceed maximum / Ajusta las coordendas de celda si sobrepasan el maximo.
+		cx = (cx <= cellmax.x ? cx : cellmax.x);
+		cy = (cy <= cellmax.y ? cy : cellmax.y);
+		cz = (cz <= cellmax.z ? cz : cellmax.z);
+		posxy[p].x = ps.x;
+		posxy[p].y = ps.y;
+		posz[p] = ps.z;
+		dcell[p] = PC__Cell(CTECDiv.DomCellCode, cx, cy, cz);
+		massp[p] = massp[pnew];
+		masspm1[p] = masspm1[pnew];
+		divisionp[p] = false;
+		switch (numAxe)
+		{
+		case 1:
+			Ellipg[p].a11 = Ellipg[p].a11 / 2.f;
+			Ellipg[p].a12 = Ellipg[p].a12 / 2.0f;
+			Ellipg[p].a13 = Ellipg[p].a13 / 2.0f;
+			break;
+		case 2:
+			Ellipg[p].a21 = Ellipg[p].a21 / 2.0f;
+			Ellipg[p].a22 = Ellipg[p].a22 / 2.0f;
+			Ellipg[p].a23 = Ellipg[p].a23 / 2.0f;
+			break;
+		case 3:
+			Ellipg[p].a31 = Ellipg[p].a31 / 2.0f;
+			Ellipg[p].a32 = Ellipg[p].a32 / 2.0f;
+			Ellipg[p].a33 = Ellipg[p].a33 / 2.0f;
+			break;
+		default:
+			break;
+		}
+		
+	}
+}
+
+void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cellmax
+	, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy, double *posz, float4 *velrhop, tsymatrix3f *taup
+	, bool *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1, unsigned *IndiceDiv, tmatrix3f *Ellipg)
+{
+	const unsigned npf = np;
+	if (npf) {
+		dim3 sgrid = cuSol::GetGridSize(npf, DIVBSIZE);
+		//KerMarkedDivision << <sgrid, DIVBSIZE >> > (npf, npb, JauEllipg, Divisionc_M, count);
+	}
+}
+
+__global__ void PrefixSumtoIndice(const int* A, const int* B, int* C) {
+	int id = blockIdx.x*blockDim.x + threadIdx.x;
+	if (A[id]) C[B[id]] = id;
+}
+
 
 }

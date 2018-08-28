@@ -60,6 +60,8 @@ typedef struct{
   float agau,bgau;
   //-Ctes. of Cubic Spline kernel.
   float cubic_a1,cubic_a2,cubic_aa,cubic_a24,cubic_c1,cubic_d1,cubic_c2,cubic_odwdeltap;
+  //Lucas
+  double SizeDivision_M;
 }StCteInteraction; 
 
 typedef struct {
@@ -75,6 +77,12 @@ typedef struct {
 	float K;
 }CAnisotropy;
 
+typedef struct {
+	unsigned DomCellCode;
+	double3 DomPosMin;
+	double3 DomPosMax;
+	float Scell;
+}CCellDivL;
 /// Structure to collect kernel information.
 typedef struct{
   int forcesbound_rg;

@@ -32,6 +32,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 namespace cuSol {
 	void CteInteractionUp(const StCteInteraction *cte);
 	void CteInteractionUpSol(const CAnisotropy *cte);
+	void CteInteractionUpCD(const CCellDivL *cte);
 
 	void ComputeStepVerlet_L(bool floating, bool shift, unsigned np, unsigned npb, const float4 * velrhop1, const float4 * velrhop2, const float * ar, const float3 * ace, const float3 * shiftpos, double dt, double dt2, float rhopoutmin, float rhopoutmax, typecode * code, double2 * movxy, double * movz, float4 * velrhopnew, const tsymatrix3f * tau2, tsymatrix3f * JauTauDot_M, tsymatrix3f * taunew, const float * mass1, const float * mass2, float * massnew, float LambdaMass, float RhopZero, tmatrix3f *Ellipg, tmatrix3f *Ellipdot);
 
@@ -110,4 +111,9 @@ namespace cuSol {
 
 	__global__ void KerComputeJauEllips_L(unsigned n, unsigned pini, tmatrix3f *Jaugradu_T, tmatrix3f *JauEllipg, tmatrix3f *JauEllipDot);
 	void ComputeJauEllips_L(unsigned np, unsigned npb, tmatrix3f *Jaugradu_T, tmatrix3f *JauEllipg, tmatrix3f *JauEllipDot);
+
+	void CheckDivision_L(unsigned np, unsigned npb, tmatrix3f *JauEllipg, bool *Divisionc_M, unsigned &count);
+	void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cellmax
+		, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy, double *posz, float4 *velrhop, tsymatrix3f *taup
+		, bool *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1, unsigned *IndiceDiv, tmatrix3f *Ellipg);
 }

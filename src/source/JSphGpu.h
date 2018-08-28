@@ -227,6 +227,7 @@ protected:
   double*      SaveArrayGpu(unsigned np,const double      *datasrc)const{ return(TSaveArrayGpu<double>     (np,datasrc)); }
   double2*     SaveArrayGpu(unsigned np,const double2     *datasrc)const{ return(TSaveArrayGpu<double2>    (np,datasrc)); }
   tsymatrix3f* SaveArrayGpu(unsigned np,const tsymatrix3f *datasrc)const{ return(TSaveArrayGpu<tsymatrix3f>(np,datasrc)); }
+  tmatrix3f* SaveArrayGpu(unsigned np, const tmatrix3f *datasrc)const { return(TSaveArrayGpu<tmatrix3f>(np, datasrc)); }
   template<class T> void TRestoreArrayGpu(unsigned np,T *data,T *datanew)const;
   void RestoreArrayGpu(unsigned np,word        *data,word        *datanew)const{ TRestoreArrayGpu<word>       (np,data,datanew); }
   void RestoreArrayGpu(unsigned np,unsigned    *data,unsigned    *datanew)const{ TRestoreArrayGpu<unsigned>   (np,data,datanew); }
@@ -236,6 +237,7 @@ protected:
   void RestoreArrayGpu(unsigned np,double      *data,double      *datanew)const{ TRestoreArrayGpu<double>     (np,data,datanew); }
   void RestoreArrayGpu(unsigned np,double2     *data,double2     *datanew)const{ TRestoreArrayGpu<double2>    (np,data,datanew); }
   void RestoreArrayGpu(unsigned np,tsymatrix3f *data,tsymatrix3f *datanew)const{ TRestoreArrayGpu<tsymatrix3f>(np,data,datanew); }
+  void RestoreArrayGpu(unsigned np, tmatrix3f *data, tmatrix3f *datanew)const { TRestoreArrayGpu<tmatrix3f>(np, data, datanew); }
 
   llong GetAllocMemoryCpu()const;
   llong GetAllocMemoryGpu()const;

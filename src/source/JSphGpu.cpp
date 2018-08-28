@@ -337,6 +337,7 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   double      *poszpre   =SaveArrayGpu(Np,PoszPreg);
   float4      *velrhoppre=SaveArrayGpu(Np,VelrhopPreg);
   tsymatrix3f *spstau    =SaveArrayGpu(Np,SpsTaug);
+  tmatrix3f *ellip = SaveArrayGpu(Np, Ellipg);
   //-Frees pointers.
   ArraysGpu->Free(Idpg);
   ArraysGpu->Free(Codeg);
@@ -349,6 +350,7 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   ArraysGpu->Free(PoszPreg);
   ArraysGpu->Free(VelrhopPreg);
   ArraysGpu->Free(SpsTaug);
+  ArraysGpu->Free(Ellipg);
   //-Resizes GPU memory allocation.
   const double mbparticle=(double(MemGpuParticles)/(1024*1024))/GpuParticlesSize; //-MB por particula.
   Log->Printf("**JSphGpu: Requesting gpu memory for %u particles: %.1f MB.",npnew,mbparticle*npnew);
@@ -377,6 +379,7 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   RestoreArrayGpu(Np,poszpre,PoszPreg);
   RestoreArrayGpu(Np,velrhoppre,VelrhopPreg);
   RestoreArrayGpu(Np,spstau,SpsTaug);
+  RestoreArrayGpu(Np, ellip, Ellipg);
   //-Updates values.
   GpuParticlesSize=npnew;
   MemGpuParticles=ArraysGpu->GetAllocMemoryGpu();
@@ -435,6 +438,7 @@ void JSphGpu::ReserveBasicArraysGpu(){
   gradu_T = ArraysGpu->ReserveMatrix3f_M();
   Ellipg = ArraysGpu->ReserveMatrix3f_M();
   Ellipdot = ArraysGpu->ReserveMatrix3f_M();
+
 }
 
 //==============================================================================
@@ -509,6 +513,7 @@ void JSphGpu::ConstantDataUp(){
   ctes.zperincx=PeriZinc.x; ctes.zperincy=PeriZinc.y; ctes.zperincz=PeriZinc.z;
   ctes.cellcode=DomCellCode;
   ctes.domposminx=DomPosMin.x; ctes.domposminy=DomPosMin.y; ctes.domposminz=DomPosMin.z;
+  ctes.SizeDivision_M = SizeDivision_M;
   cusph::CteInteractionUp(&ctes);
   cuSol::CteInteractionUp(&ctes);
   // LUCAS
@@ -525,10 +530,18 @@ void JSphGpu::ConstantDataUp(){
   ctes2.C6 = C6;
   ctes2.K = K;
   cuSol::CteInteractionUpSol(&ctes2);
+  CCellDivL cteDivl;
+  memset(&cteDivl, 0, sizeof(CCellDivL));
+  cteDivl.DomCellCode = DomCellCode;
+  cteDivl.DomPosMin = { DomPosMin.x,DomPosMin.y,DomPosMin.z };
+  cteDivl.DomPosMax = { DomPosMax.x,DomPosMax.y,DomPosMax.z };
+  cteDivl.Scell = Scell;
+  cuSol::CteInteractionUpCD(&cteDivl);
   CheckCudaError("ConstantDataUp base ans Sol","Failed copying constants to GPU.");
+
 }
 
-//==============================================================================
+//=============================================================================
 /// Uploads particle data to the GPU.
 /// Sube datos de particulas a la GPU.
 //==============================================================================

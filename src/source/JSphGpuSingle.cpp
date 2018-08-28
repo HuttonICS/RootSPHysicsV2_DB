@@ -409,6 +409,8 @@ void JSphGpuSingle::ConfigDomain_Tgpu(JPartsLoad4 *pl) {
 	BoundChanged = true;
 	RunCellDivide(true);
 }
+
+
 //==============================================================================
 /// Resizes the allocated space for particles on the CPU and the GPU measuring
 /// the time spent with TMG_SuResizeNp. At the end updates the division.
@@ -887,7 +889,8 @@ void JSphGpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
 
 
 	// No div cellulaire atm
-     RunCellDivide(true);
+	RunSizeDivision_L();
+    RunCellDivide(true);
 
     TimeStep+=stepdt;
 
@@ -915,6 +918,38 @@ void JSphGpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
   //-End of Simulation.
   //--------------------
   FinishRun(partoutstop);
+}
+
+void JSphGpuSingle::RunSizeDivision_L()
+{
+	const char met[] = "RunSizeDivision_L";
+	bool run = true;
+	unsigned count = 0;
+	//1 Check Division 
+	//cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M, count);
+	printf("count = %d \n", sizeof(Ellipg));
+	while (run) {
+		// 2. Prepare memory for count particles
+		//-Maximum number of particles that fit in the list / Numero maximo de particulas que caben en la lista.
+		unsigned nmax = GpuParticlesSize - 1;
+
+		if (Np >= 0x80000000)RunException(met, "The number of particles is too big.");//-Because the last bit is used to mark the direction in which a new periodic particle is created / Pq el ultimo bit se usa para marcar el sentido en que se crea la nueva periodica.
+																					  // Maximal number of division per turn
+
+																					  //-Redimension memory for particles if there is insufficient space and repeat the search process.
+		if (count > nmax || count + Np > GpuParticlesSize) {
+			// Peut etre qu'ici on a la source de certains bug (trop particles, need extend)
+			//ResizeParticlesSize(Np + count, PERIODIC_OVERMEMORYNP, false);
+		}
+
+		// 3. Divide marked particles
+		else {
+		run = false;
+		// Convert 
+		// Divide the selected particles in X direction
+		//cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcell,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M);
+		}
+	}
 }
 
 //==============================================================================
