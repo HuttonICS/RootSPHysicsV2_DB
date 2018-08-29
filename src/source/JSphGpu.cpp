@@ -313,7 +313,8 @@ void JSphGpu::AllocGpuMemoryParticles(unsigned np,float over){
   ArraysGpu->AddArrayCount(JArraysGpu::SIZE_24B, 4); //-JauGradvel, JauTau2, Omega and Taudot
   ArraysGpu->AddArrayCount(JArraysGpu::SIZE_4B, 4); // SaveFields
   ArraysGpu->AddArrayCount(JArraysGpu::SIZE_12B, 1); // Press3D
-  ArraysGpu->AddArrayCount(JArraysGpu::SIZE_36B, 3); // gradu & ellipg & ellipdot
+  ArraysGpu->AddArrayCount(JArraysGpu::SIZE_36B, 4); // Ellip - EllipDo // Gradu
+  ArraysGpu->AddArrayCount(JArraysGpu::SIZE_12B, 3); // SaveFields : ellipa, ellipb, ellipc
   //-Shows the allocated memory.
   MemGpuParticles=ArraysGpu->GetAllocMemoryGpu();
   PrintSizeNp(GpuParticlesSize,MemGpuParticles);
@@ -337,6 +338,15 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   double      *poszpre   =SaveArrayGpu(Np,PoszPreg);
   float4      *velrhoppre=SaveArrayGpu(Np,VelrhopPreg);
   tsymatrix3f *spstau    =SaveArrayGpu(Np,SpsTaug);
+  // Matthias
+  bool		  *division = SaveArrayGpu(Np, Divisionc_M);
+  float		  *pore = SaveArrayGpu(Np, Porec_M);
+  float		  *mass = SaveArrayGpu(Np, Massc_M);
+  float		  *massm1 = SaveArrayGpu(Np, MassM1c_M);
+  //float		  *volu = SaveArrayCpu(Np, Voluc_M);	
+  //tmatrix3f *jautau = SaveArrayCpu(Np, JauTauc_M);
+  tsymatrix3f *jautau2 = SaveArrayGpu(Np, JauTauc2_M);
+  tsymatrix3f *jautaum12 = SaveArrayGpu(Np, JauTauM1c2_M);
   tmatrix3f *ellip = SaveArrayGpu(Np, Ellipg);
   //-Frees pointers.
   ArraysGpu->Free(Idpg);
@@ -350,6 +360,15 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   ArraysGpu->Free(PoszPreg);
   ArraysGpu->Free(VelrhopPreg);
   ArraysGpu->Free(SpsTaug);
+  // Matthias
+  ArraysGpu->Free(Divisionc_M);
+  ArraysGpu->Free(Porec_M);
+  ArraysGpu->Free(Massc_M);
+  ArraysGpu->Free(MassM1c_M);
+  //ArraysCpu->Free(Voluc_M);
+  //ArraysCpu->Free(JauTauc_M);
+  ArraysGpu->Free(JauTauc2_M);
+  ArraysGpu->Free(JauTauM1c2_M);
   ArraysGpu->Free(Ellipg);
   //-Resizes GPU memory allocation.
   const double mbparticle=(double(MemGpuParticles)/(1024*1024))/GpuParticlesSize; //-MB por particula.
@@ -367,6 +386,15 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   if(poszpre)   PoszPreg   =ArraysGpu->ReserveDouble();
   if(velrhoppre)VelrhopPreg=ArraysGpu->ReserveFloat4();
   if(spstau)    SpsTaug    =ArraysGpu->ReserveSymatrix3f();
+  // Matthias
+  Divisionc_M = ArraysGpu->ReserveBool();
+  Porec_M = ArraysGpu->ReserveFloat();
+  Massc_M = ArraysGpu->ReserveFloat();
+  MassM1c_M = ArraysGpu->ReserveFloat();
+  //Voluc_M = ArraysCpu->ReserveFloat();
+  //JauTauc_M = ArraysCpu->ReserveMatrix3f_M();
+  JauTauc2_M = ArraysGpu->ReserveSymatrix3f();
+  if (velrhopm1) JauTauM1c2_M = ArraysGpu->ReserveSymatrix3f();
   //-Restore data in GPU memory.
   RestoreArrayGpu(Np,idp,Idpg);
   RestoreArrayGpu(Np,code,Codeg);
@@ -379,6 +407,15 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   RestoreArrayGpu(Np,poszpre,PoszPreg);
   RestoreArrayGpu(Np,velrhoppre,VelrhopPreg);
   RestoreArrayGpu(Np,spstau,SpsTaug);
+  // Matthias
+  RestoreArrayGpu(Np, division, Divisionc_M);
+  RestoreArrayGpu(Np, pore, Porec_M);
+  RestoreArrayGpu(Np, mass, Massc_M);
+  RestoreArrayGpu(Np, massm1, MassM1c_M);
+  //RestoreArrayCpu(Np, volu, Porec_M);
+  //RestoreArrayCpu(Np, jautau, JauTauc_M);
+  RestoreArrayGpu(Np, jautau2, JauTauc2_M);
+  RestoreArrayGpu(Np, jautaum12, JauTauM1c2_M);
   RestoreArrayGpu(Np, ellip, Ellipg);
   //-Updates values.
   GpuParticlesSize=npnew;
@@ -431,14 +468,10 @@ void JSphGpu::ReserveBasicArraysGpu(){
 
   // Matthias
   Divisionc_M = ArraysGpu->ReserveBool();
-  Porec_M = ArraysGpu->ReserveFloat();
   Massc_M = ArraysGpu->ReserveFloat();
   //JauTauc_M = ArraysCpu->ReserveMatrix3f_M();
   JauTauc2_M = ArraysGpu->ReserveSymatrix3f();
-  gradu_T = ArraysGpu->ReserveMatrix3f_M();
   Ellipg = ArraysGpu->ReserveMatrix3f_M();
-  Ellipdot = ArraysGpu->ReserveMatrix3f_M();
-
 }
 
 //==============================================================================
@@ -837,8 +870,6 @@ void JSphGpu::InitRun() {
 	cudaMemset(JauTauc2_M, 0, sizeof(tsymatrix3f)*Np);
 	cudaMemset(Divisionc_M, 0, sizeof(bool)*Np);
 	cudaMemcpy(MassM1c_M, Massc_M, sizeof(float)*Np, cudaMemcpyDeviceToDevice);
-	cudaMemset(Ellipdot, 0, sizeof(tmatrix3f)*Np);
-	cudaMemset(gradu_T, 0, sizeof(tmatrix3f)*Np);
 	cudaDeviceSynchronize();
 	if (UseDEM)DemDtForce = DtIni; //(DEM )
 	if (CaseNfloat)InitFloating();
@@ -1064,7 +1095,9 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
   JauGradvelc2_M = ArraysGpu->ReserveSymatrix3f();
   JauTauDot_M = ArraysGpu->ReserveSymatrix3f();
   JauOmega_M = ArraysGpu->ReserveSymatrix3f();
-
+  //Ellip
+  Ellipdot = ArraysGpu->ReserveMatrix3f_M();
+  gradu_T = ArraysGpu->ReserveMatrix3f_M();
   //-Prepares data for interation Pos-Single.
   if(Psingle){
     PsPospressg=ArraysGpu->ReserveFloat4();
@@ -1108,6 +1141,9 @@ void JSphGpu::PosInteraction_Forces(){
   ArraysGpu->Free(Pressg);  Pressg = NULL;
   ArraysGpu->Free(Press3Dc);  Press3Dc = NULL;
   ArraysGpu->Free(Porec_M);  Porec_M = NULL;
+  //Ellip
+  ArraysGpu->Free(Ellipdot);  Ellipdot = NULL;
+  ArraysGpu->Free(gradu_T);  gradu_T = NULL;
 }
 
 //==============================================================================

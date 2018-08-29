@@ -926,23 +926,23 @@ void JSphGpuSingle::RunSizeDivision_L()
 	bool run = true;
 	unsigned count = 0;
 	//1 Check Division 
-	//cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M, count);
-	printf("count = %d \n", sizeof(Ellipg));
+	cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M, count);
+	printf("count = %d \n",count);
 	while (run) {
 		// 2. Prepare memory for count particles
-		//-Maximum number of particles that fit in the list / Numero maximo de particulas que caben en la lista.
+		//-Maximum number of particles that fit in the list.
 		unsigned nmax = GpuParticlesSize - 1;
-
 		if (Np >= 0x80000000)RunException(met, "The number of particles is too big.");//-Because the last bit is used to mark the direction in which a new periodic particle is created / Pq el ultimo bit se usa para marcar el sentido en que se crea la nueva periodica.
 																					  // Maximal number of division per turn
 
 																					  //-Redimension memory for particles if there is insufficient space and repeat the search process.
 		if (count > nmax || count + Np > GpuParticlesSize) {
 			// Peut etre qu'ici on a la source de certains bug (trop particles, need extend)
-			//ResizeParticlesSize(Np + count, PERIODIC_OVERMEMORYNP, false);
+			ResizeParticlesSize(Np + count, PERIODIC_OVERMEMORYNP, false);
 		}
+		//3. Sort the number of divided particles.
 
-		// 3. Divide marked particles
+		// 4. Divide marked particles
 		else {
 		run = false;
 		// Convert 

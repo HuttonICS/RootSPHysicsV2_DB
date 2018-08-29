@@ -220,6 +220,7 @@ protected:
 
   template<class T> T* TSaveArrayGpu(unsigned np,const T *datasrc)const;
   word*        SaveArrayGpu(unsigned np,const word        *datasrc)const{ return(TSaveArrayGpu<word>       (np,datasrc)); }
+  bool*        SaveArrayGpu(unsigned np, const bool        *datasrc)const { return(TSaveArrayGpu<bool>(np, datasrc)); }
   unsigned*    SaveArrayGpu(unsigned np,const unsigned    *datasrc)const{ return(TSaveArrayGpu<unsigned>   (np,datasrc)); }
   int*         SaveArrayGpu(unsigned np,const int         *datasrc)const{ return(TSaveArrayGpu<int>        (np,datasrc)); }
   float*       SaveArrayGpu(unsigned np,const float       *datasrc)const{ return(TSaveArrayGpu<float>      (np,datasrc)); }
@@ -230,6 +231,7 @@ protected:
   tmatrix3f* SaveArrayGpu(unsigned np, const tmatrix3f *datasrc)const { return(TSaveArrayGpu<tmatrix3f>(np, datasrc)); }
   template<class T> void TRestoreArrayGpu(unsigned np,T *data,T *datanew)const;
   void RestoreArrayGpu(unsigned np,word        *data,word        *datanew)const{ TRestoreArrayGpu<word>       (np,data,datanew); }
+  void RestoreArrayGpu(unsigned np, bool        *data, bool        *datanew)const { TRestoreArrayGpu<bool>(np, data, datanew); }
   void RestoreArrayGpu(unsigned np,unsigned    *data,unsigned    *datanew)const{ TRestoreArrayGpu<unsigned>   (np,data,datanew); }
   void RestoreArrayGpu(unsigned np,int         *data,int         *datanew)const{ TRestoreArrayGpu<int>        (np,data,datanew); }
   void RestoreArrayGpu(unsigned np,float       *data,float       *datanew)const{ TRestoreArrayGpu<float>      (np,data,datanew); }

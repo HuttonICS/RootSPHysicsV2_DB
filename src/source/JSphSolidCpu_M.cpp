@@ -5390,7 +5390,7 @@ void JSphSolidCpu::ComputeVerlet(double dt) {
 	/*if (VerletStep<VerletSteps) {
 		const double twodt = dt + dt;
 		if (TShifting)ComputeVerletVarsSolid_M<true>(Velrhopc, VelrhopM1c, JauTauc2_M, JauTauM1c2_M, dt, twodt, Posc, Dcellc, Codec, VelrhopM1c, JauTauc2_M);
-		else         ComputeVerletVarsSolid_M<false>(Velrhopc, VelrhopM1c, JauTauc2_M, JauTauM1c2_M, dt, twodt, Posc, Dcellc, Codec, VelrhopM1c, JauTauc2_M);
+		else         ComputeVerletVarsSolid_M<false>(Velrhopc, VelrhopM1c, JauTauc2_M, JauTauM1c2_M, dt, twodt, Posc, Dcellc, Codec, VelrhopM1c, JauTauc2_M)
 		ComputeVelrhopBound(VelrhopM1c, twodt, VelrhopM1c);
 	}
 	else {
