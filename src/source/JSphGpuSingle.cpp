@@ -619,8 +619,8 @@ void JSphGpuSingle::Interaction_Forces(TpInter tinter){
   const bool lamsps=(TVisco==VISCO_LaminarSPS);
   unsigned bsfluid=BlockSizes.forcesfluid;
   unsigned bsbound=BlockSizes.forcesbound;
-  if(BsAuto && !(Nstep%BsAuto->GetStepsInterval())){ //-Every certain number of steps. | Cada cierto numero de pasos.
-    cusph::Interaction_Forces(Psingle,TKernel,WithFloating,UseDEM,lamsps,TDeltaSph,CellMode,Visco*ViscoBoundFactor,Visco,bsbound,bsfluid,Np,Npb,NpbOk,CellDivSingle->GetNcells(),CellDivSingle->GetBeginCell(),CellDivSingle->GetCellDomainMin(),Dcellg,Posxyg,Poszg,PsPospressg,Velrhopg,Codeg,Idpg,FtoMasspg,SpsTaug,SpsGradvelg,ViscDtg,Arg,Aceg,Deltag,TShifting,ShiftPosg,ShiftDetectg,Simulate2D,NULL,BsAuto);
+  if(BsAuto && !(Nstep%BsAuto->GetStepsInterval())){//-Every certain number of steps. | Cada cierto numero de pasos.
+	cusph::Interaction_Forces(Psingle,TKernel,WithFloating,UseDEM,lamsps,TDeltaSph,CellMode,Visco*ViscoBoundFactor,Visco,bsbound,bsfluid,Np,Npb,NpbOk,CellDivSingle->GetNcells(),CellDivSingle->GetBeginCell(),CellDivSingle->GetCellDomainMin(),Dcellg,Posxyg,Poszg,PsPospressg,Velrhopg,Codeg,Idpg,FtoMasspg,SpsTaug,SpsGradvelg,ViscDtg,Arg,Aceg,Deltag,TShifting,ShiftPosg,ShiftDetectg,Simulate2D,NULL,BsAuto);
     PreInteractionVars_Forces(tinter,Np,Npb);
     BsAuto->ProcessTimes(TimeStep,Nstep);
     bsfluid=BlockSizes.forcesfluid=BsAuto->GetKernel(0)->GetOptimumBs();
@@ -889,7 +889,7 @@ void JSphGpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
 
 
 	// No div cellulaire atm
-	RunSizeDivision_L();
+	//RunSizeDivision_L();
     RunCellDivide(true);
 
     TimeStep+=stepdt;
@@ -940,12 +940,13 @@ void JSphGpuSingle::RunSizeDivision_L()
 			// Peut etre qu'ici on a la source de certains bug (trop particles, need extend)
 			ResizeParticlesSize(Np + count, PERIODIC_OVERMEMORYNP, false);
 		}
-		//3. Sort the number of divided particles.
-
-		// 4. Divide marked particles
 		else {
 		run = false;
-		// Convert 
+		//3. Sort the number of divided particles.
+		PrefixSum = ArraysGpu->ReserveUint();
+		TabIndice = ArraysGpu->ReserveUint();
+		cuSol::TriIndice(Np, Divisionc_M, PrefixSum, TabIndice);
+		// 4. Divide marked particles
 		// Divide the selected particles in X direction
 		//cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcell,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M);
 		}

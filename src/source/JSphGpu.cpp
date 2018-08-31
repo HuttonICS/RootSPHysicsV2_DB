@@ -1154,6 +1154,7 @@ void JSphGpu::ComputeVerlet(double dt){
   TmgStart(Timers,TMG_SuComputeStep);
   const bool shift=TShifting!=SHIFT_None;
   VerletStep++;
+
   //-Allocates memory to compute the displacement.
   double2 *movxyg=ArraysGpu->ReserveDouble2();
   double *movzg=ArraysGpu->ReserveDouble();

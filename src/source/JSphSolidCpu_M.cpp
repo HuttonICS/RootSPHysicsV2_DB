@@ -816,14 +816,16 @@ void JSphSolidCpu::PreInteractionVars_Forces(TpInter tinter, unsigned np, unsign
 																			  //-Apply the extra forces to the correct particle sets.
 	if (AccInput)AddAccInput();
 
-	//-Prepare values of rhop for interaction. | Prepara datos derivados de rhop para interaccion.
+	//-Prepare values of rhop for interaction | Prepara datos derivados de rhop para interaccion.
 	const int n = int(np);
 #ifdef OMP_USE
 #pragma omp parallel for schedule (static) if(n>OMP_LIMIT_COMPUTELIGHT)
 #endif
 	for (int p = 0; p<n; p++) {
-		const float rhop = Velrhopc[p].w, rhop_r0 = rhop / RhopZero;
-		Pressc[p] = CteB * (pow(rhop_r0, Gamma) - 1.0f);
+		const float rhop = Velrhopc[p].w;
+		const float rhop_r0 = rhop / RhopZero;
+		Pressc[p] = double(CteB) * (pow(double(rhop_r0), double(Gamma)) - 1.0f);
+		printf("p = %d / %1.10f", p, Pressc[p]);
 		//Press3Dc[p] = AnisotropyK_M * TFloat3(CteB * (pow(rhop_r0, Gamma) - 1.0f));
 		Press3Dc[p] = CteB3D * (pow(rhop_r0, Gamma) - 1.0f);
 		// Matthias
@@ -834,8 +836,9 @@ void JSphSolidCpu::PreInteractionVars_Forces(TpInter tinter, unsigned np, unsign
 		//Porec_M[p] = PoreZero / (1 + exp(-(TimeStep-2))) * exp(-(pow(distance2.x,2) + pow(distance2.y, 2) + pow(distance2.z, 2)) / Spread_M);
 		// Porec_M[p] = PoreZero  / sqrt(2*Spread_M*PI) * exp(-(pow(distance2.x,2) + pow(distance2.y, 2) + pow(distance2.z, 2)) / Spread_M);
 		//Porec_M[p] = PoreZero  / sqrt(2*Spread_M*PI) * exp(-(pow(distance2.x,2)) / Spread_M);
-		
+		//printf("Press %d : %f", p, Pressc[p]);
 	}
+	printf("\n");
 }
 
 //==============================================================================

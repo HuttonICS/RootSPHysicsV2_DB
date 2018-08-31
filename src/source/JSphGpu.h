@@ -197,6 +197,9 @@ protected:
   tmatrix3f *Ellipg;
   tmatrix3f *Ellipdot;
 
+  //GPU Cell div
+  unsigned *PrefixSum;
+  unsigned *TabIndice;
   
   TimersGpu Timers;  ///<Declares an array with timers for CPU (type structure \ref StSphTimerGpu).
 

@@ -116,4 +116,5 @@ namespace cuSol {
 	void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cellmax
 		, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy, double *posz, float4 *velrhop, tsymatrix3f *taup
 		, bool *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1, unsigned *IndiceDiv, tmatrix3f *Ellipg);
+	void TriIndice(unsigned nb, bool *Divisionc_M, unsigned *PrefixSum, unsigned* TabIndice);
 }

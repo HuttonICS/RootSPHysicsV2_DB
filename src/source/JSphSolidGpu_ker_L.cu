@@ -4022,8 +4022,11 @@ __global__ void KerPressPoreC_L(
 	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x; //-Number of particle.
 	if (p<n) {
 		
-		const float rhop = velrhop[p].w, rhop_r0 = rhop / RhopZero;
-		 Pressg[p] = CteB * (pow(rhop_r0, Gamma) - 1.0f);
+		const float rhop = velrhop[p].w;
+		const double rhop_r0d = rhop / CTE.rhopzero;
+		const float rhop_r0 = float(rhop_r0d);
+		 Pressg[p] = CTE.cteb * (pow(rhop_r0, CTE.gamma) - 1.0f);
+		 printf("p = %d / %1.10f", p, Pressg[p]);
 		 Press3Dc[p].x = CteB3D.x *  (pow(rhop_r0, Gamma) - 1.0f);
 		 Press3Dc[p].y = CteB3D.y *  (pow(rhop_r0, Gamma) - 1.0f);
 		 Press3Dc[p].z = CteB3D.z *  (pow(rhop_r0, Gamma) - 1.0f);
@@ -4032,6 +4035,7 @@ __global__ void KerPressPoreC_L(
 		// float distance2y = posxy[p].y - LocDiv_M.y;
 		// float distance2z = posz[p] - LocDiv_M.z;
 		 Porec_M[p] = PoreZero;
+		// printf("Press %d : %f", p, Pressg[p]);
 		//Porec_M[p] = PoreZero / (1 + exp(-(TimeStep-2))) * exp(-(pow(distance2x,2) + pow(distance2.y, 2) + pow(distance2.z, 2)) / Spread_M);
 	//Porec_M[p] = PoreZero / sqrt(2 * Spread_M*PI) * exp(-(pow(distance2x, 2) + pow(distance2y, 2) + pow(distance2z, 2)) / Spread_M);
 	  //  Porec_M[p] = PoreZero  / sqrt(2*Spread_M*PI) * exp(-(pow(distance2x,2)) / Spread_M);
@@ -4048,7 +4052,7 @@ void PressPoreC_L(unsigned np, const float4 *velrhop, const float RhopZero, floa
 	if (np) {
 		dim3 sgrid = cuSol::GetGridSize(np, SPHBSIZE);
 		KerPressPoreC_L << <sgrid, SPHBSIZE >> > (np, velrhop, RhopZero, Pressg, CteB3D, CteB, Gamma, Press3Dc, posxy, posz, LocDiv_M,PoreZero, Spread_M,Porec_M);
-
+		printf("\n");
 	}
 }
 
@@ -4095,7 +4099,7 @@ void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,bool *Divisi
 		{
 			if (Divisionc_M[i])
 			{
-				count++;
+				//count;
 			}
 		}
 	}
@@ -4243,10 +4247,16 @@ void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cell
 	}
 }
 
-__global__ void PrefixSumtoIndice(const int* A, const int* B, int* C) {
+__global__ void PrefixSumtoIndice(const bool* A, const unsigned* B, unsigned* C) {
 	int id = blockIdx.x*blockDim.x + threadIdx.x;
 	if (A[id]) C[B[id]] = id;
 }
 
+void TriIndice(unsigned nb,bool *Divisionc_M,unsigned *PrefixSum, unsigned* TabIndice)
+{
+	//thrust::inclusive_scan(Divisionc_M, Divisionc_M + nb, PrefixSum);
+//	PrefixSumtoIndice(Divisionc_M, PrefixSum, TabIndice);
+
+}
 
 }
