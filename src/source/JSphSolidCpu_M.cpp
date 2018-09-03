@@ -824,8 +824,8 @@ void JSphSolidCpu::PreInteractionVars_Forces(TpInter tinter, unsigned np, unsign
 	for (int p = 0; p<n; p++) {
 		const float rhop = Velrhopc[p].w;
 		const float rhop_r0 = rhop / RhopZero;
-		Pressc[p] = double(CteB) * (pow(double(rhop_r0), double(Gamma)) - 1.0f);
-		printf("p = %d / %1.10f", p, Pressc[p]);
+		//Pressc[p] = CteB * (pow(rhop_r0,Gamma) - 1.0f);
+		Pressc[p] = -0.001;
 		//Press3Dc[p] = AnisotropyK_M * TFloat3(CteB * (pow(rhop_r0, Gamma) - 1.0f));
 		Press3Dc[p] = CteB3D * (pow(rhop_r0, Gamma) - 1.0f);
 		// Matthias
@@ -5182,6 +5182,7 @@ template<bool shift> void JSphSolidCpu::ComputeVerletVarsSolMass_M(const tfloat4
 		const float adens = float(LambdaMass * (RhopZero / velrhop1[p].w - 1.0f));
 		//-Calculate density. | Calcula densidad.
 		const float rhopnew = float(double(velrhop2[p].w) + dt2 * (Arc[p] + adens));
+		//printf("velhrop : %d = %1.8f/%1.8f/%1.8f/%1.8f", p, RhopZero, velrhop1[p].w, (RhopZero / velrhop1[p].w), adens);
 		if (!WithFloating || CODE_IsFluid(code[p])) {//-Fluid Particles..
 													 //-Calculate displacement and update position. | Calcula desplazamiento y actualiza posicion.
 			double dx = double(velrhop1[p].x)*dt + double(Acec[p].x)*dt205;

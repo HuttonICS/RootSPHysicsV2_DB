@@ -1617,10 +1617,11 @@ namespace cuSol {
 			else { //-Particles: Floating & Fluid.
 				   //-Updates density.
 				const float volu = float(double(mass1[p]) / double(velrhop1[p].w));
-				const float adens = float(LambdaMass * (RhopZero / velrhop1[p].w - 1.0f));
+				const double adens = double(LambdaMass * ((RhopZero / velrhop1[p].w) - 1.0f));
 						
 				float4 rvelrhop2 = velrhop2[p];
 				rvelrhop2.w = float(double(rvelrhop2.w) + dt2 * (ar[p] + adens));
+				//printf("velhrop : %d = %1.8f/%1.8f/%1.8f/%1.8f", p, RhopZero, velrhop1[p].w, (RhopZero / velrhop1[p].w), adens);
 				//printf("\n new = %f / %f /%f /%f /%f", rvelrhop2.w,dt2, ar[p], adens, velrhop1[p].w);
 				//rvelrhop2.w = float(double(rvelrhop2.w));
 				float4 rvel1 = velrhop1[p];
@@ -4025,8 +4026,8 @@ __global__ void KerPressPoreC_L(
 		const float rhop = velrhop[p].w;
 		const double rhop_r0d = rhop / CTE.rhopzero;
 		const float rhop_r0 = float(rhop_r0d);
-		 Pressg[p] = CTE.cteb * (pow(rhop_r0, CTE.gamma) - 1.0f);
-		 printf("p = %d / %1.10f", p, Pressg[p]);
+		 //Pressg[p] = double(CTE.cteb) * (pow(rhop_r0d, double(CTE.gamma)) - 1.0f);
+		 Pressg[p] = -0.001;
 		 Press3Dc[p].x = CteB3D.x *  (pow(rhop_r0, Gamma) - 1.0f);
 		 Press3Dc[p].y = CteB3D.y *  (pow(rhop_r0, Gamma) - 1.0f);
 		 Press3Dc[p].z = CteB3D.z *  (pow(rhop_r0, Gamma) - 1.0f);
