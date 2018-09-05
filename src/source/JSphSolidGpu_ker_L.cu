@@ -17,6 +17,8 @@ You should have received a copy of the GNU Lesser General Public License along w
 */
 
 /// \file JSphSolidGpu_ker_L.cu \brief Implements functions and CUDA kernels to compute operations for solids particles.
+#include <thrust/device_ptr.h>
+#include <thrust/execution_policy.h>
 #include <stdio.h>
 #include "JSphSolidGpu_ker_L.h"
 #include "JSph.h"
@@ -4086,9 +4088,7 @@ __global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, b
 		double vol = ((4.0 / 3.0) * 3.1415*normeai*normebi*normeci);
 		if (vol > CTE.SizeDivision_M*PI*CTE.dp*CTE.dp*CTE.dp / 6.0) {
 			Divisionc_M[p] = true;
-			printf("\n DIV");
 		}
-
 	}
 }
 void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,bool *Divisionc_M,unsigned &count)
@@ -4104,6 +4104,7 @@ __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini,
 	, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy,double *posz, float4 *velrhop, tsymatrix3f *taup
 	, bool *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1,unsigned *IndiceDiv,tmatrix3f *Ellipg)
 {
+	printf("oki");
 	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned oldp = IndiceDiv[p];
 	if (oldp < np) {
@@ -4238,20 +4239,21 @@ void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cell
 	const unsigned npf = np;
 	if (npf) {
 		dim3 sgrid = cuSol::GetGridSize(npf, DIVBSIZE);
-		//KerMarkedDivision << <sgrid, DIVBSIZE >> > (npf, npb, JauEllipg, Divisionc_M, count);
+		KerMarkedDivision << <sgrid, DIVBSIZE >> > (countMax, np, pini, cellmax, idp, code, dcell, posxy, posz, velrhop, taup, divisionp, porep, massp, velrhopm1, taupm1, masspm1, IndiceDiv, Ellipg);
+	
 	}
 }
 
 __global__ void PrefixSumtoIndice(const bool* A, const unsigned* B, unsigned* C) {
 	int id = blockIdx.x*blockDim.x + threadIdx.x;
 	if (A[id]) C[B[id]] = id;
-	printf("id = %d", id);
+	printf("infos : Id = %d / B[id] = %d C[id] = %d \n", id, B[id], C[id]);
 }
 
 void TriIndice(unsigned nb,bool *Divisionc_M,unsigned *PrefixSum, unsigned* TabIndice)
 {
-	//thrust::inclusive_scan(Divisionc_M, Divisionc_M + nb, PrefixSum);
-	//PrefixSumtoIndice <<<1,nb>>> (Divisionc_M, PrefixSum, TabIndice);
+	thrust::inclusive_scan(thrust::device,Divisionc_M, Divisionc_M + nb, PrefixSum);
+	PrefixSumtoIndice <<<1,nb>>> (Divisionc_M, PrefixSum, TabIndice);
 
 }
 

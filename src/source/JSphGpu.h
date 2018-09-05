@@ -200,6 +200,7 @@ protected:
   //GPU Cell div
   unsigned *PrefixSum;
   unsigned *TabIndice;
+  unsigned *NbDiv;
   
   TimersGpu Timers;  ///<Declares an array with timers for CPU (type structure \ref StSphTimerGpu).
 

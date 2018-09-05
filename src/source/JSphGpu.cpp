@@ -423,9 +423,9 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   MemGpuParticles=ArraysGpu->GetAllocMemoryGpu();
 }
 
-//==============================================================================
+//=============================================================================
 /// Saves a GPU array in CPU memory. 
-//==============================================================================
+//=============================================================================
 template<class T> T* JSphGpu::TSaveArrayGpu(unsigned np,const T *datasrc)const{
   T *data=NULL;
   if(datasrc){

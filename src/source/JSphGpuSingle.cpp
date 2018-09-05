@@ -926,14 +926,15 @@ void JSphGpuSingle::RunSizeDivision_L()
 	bool run = true;
 	unsigned count = 0;
 	//1 Check Division 
+	NbDiv = ArraysGpu->ReserveUint();
 	cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M, count);
 	printf("count = %d \n",count);
 	while (run) {
 		// 2. Prepare memory for count particles .
-		//-Maximum number of particles that fit in the list.
+		//-Maximum number of particles that fit in the list..
 		unsigned nmax = GpuParticlesSize - 1;
 		if (Np >= 0x80000000)RunException(met, "The number of particles is too big.");//-Because the last bit is used to mark the direction in which a new periodic particle is created / Pq el ultimo bit se usa para marcar el sentido en que se crea la nueva periodica.
-																					  // Maximal number of division per turn
+																					  //-Maximal number of division per turn
 
 																					  //-Redimension memory for particles if there is insufficient space and repeat the search process.
 		if (count > nmax || count + Np > GpuParticlesSize) {
@@ -942,15 +943,17 @@ void JSphGpuSingle::RunSizeDivision_L()
 		}
 		else {
 		run = false;
-		//3. Sort the number of divided particles.
+		//3. Sort the number of divided particles..
 		PrefixSum = ArraysGpu->ReserveUint();
 		TabIndice = ArraysGpu->ReserveUint();
+		cudaMemset(PrefixSum, 0, sizeof(UINT)*Np);
+		cudaMemset(TabIndice, 0, sizeof(UINT)*Np);
 		cuSol::TriIndice(Np, Divisionc_M, PrefixSum, TabIndice);
 		ArraysGpu->Free(PrefixSum);
 		ArraysGpu->Free(TabIndice);
-		// 4. Divide marked particles
-		// Divide the selected particles in X direction
-		//cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcell,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M);
+		// 4. Divide marked particles.
+		// Divide the selected particles in X direction.
+		cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcell,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M,TabIndice,Ellipg);
 		}
 	}
 	printf("count = %d \n", count);
