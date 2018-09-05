@@ -112,6 +112,7 @@ void JArraysGpuSize::SetArraySize(unsigned size){
 void* JArraysGpuSize::Reserve(){
   if(CountUsed==Count||!ArraySize)RunException("Reserve",fun::PrintStr("There are no arrays available with %u bytes.",ElementSize));
   CountUsed++;
+  printf("reserve %d/%d/%d \n", ElementSize, CountUsed, Count);
   CountUsedMax=max(CountUsedMax,CountUsed);
   return(Pointers[CountUsed-1]);
 }
@@ -138,6 +139,7 @@ void JArraysGpuSize::Free(void *pointer){
       void *aux=Pointers[CountUsed-1]; Pointers[CountUsed-1]=Pointers[pos]; Pointers[pos]=aux;
     }
     CountUsed--;
+	printf("free %d/%d/%d \n", ElementSize, CountUsed, Count);
   }
 }  
 

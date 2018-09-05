@@ -321,12 +321,13 @@ void JSphGpu::AllocGpuMemoryParticles(unsigned np,float over){
   CheckCudaError(met,"Failed GPU memory allocation.");
 }
 
-//==============================================================================
+//============================================================================
 /// Resizes space in GPU memory for particles.
-//==============================================================================
+//============================================================================
 void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   npnew=npnew+PARTICLES_OVERMEMORY_MIN;
   //-Saves current data from GPU.
+  printf("\n Passage resize \n");
   unsigned    *idp       =SaveArrayGpu(Np,Idpg);
   typecode    *code      =SaveArrayGpu(Np,Codeg);
   unsigned    *dcell     =SaveArrayGpu(Np,Dcellg);
@@ -1078,6 +1079,7 @@ void JSphGpu::PreInteractionVars_Forces(TpInter tinter,unsigned np,unsigned npb)
 void JSphGpu::PreInteraction_Forces(TpInter tinter){
   TmgStart(Timers,TMG_CfPreForces);
   //-Allocates memory.
+  printf("\n debut deb force \n ");
   ViscDtg=ArraysGpu->ReserveFloat();
   Arg=ArraysGpu->ReserveFloat();
   Aceg=ArraysGpu->ReserveFloat3();
@@ -1088,6 +1090,7 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
   }   
   if(TVisco==VISCO_LaminarSPS)SpsGradvelg=ArraysGpu->ReserveSymatrix3f();
   // Matthias
+  printf("ici");
   Pressg = ArraysGpu->ReserveFloat();
   Porec_M = ArraysGpu->ReserveFloat();
   Press3Dc = ArraysGpu->ReserveFloat3();
@@ -1118,6 +1121,7 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
   ViscDtMax=0;
   CheckCudaError("PreInteraction_Forces","Failed calculating VelMax.");
   TmgStop(Timers,TMG_CfPreForces);
+  printf("\n fin deb force \n ");
 }
 
 //==============================================================================
@@ -1126,6 +1130,7 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
 //==============================================================================
 void JSphGpu::PosInteraction_Forces(){
   //-Frees memory allocated in PreInteraction_Forces().
+	printf("\n debut pref force \n ");
   ArraysGpu->Free(Arg);          Arg=NULL;
   ArraysGpu->Free(Aceg);         Aceg=NULL;
   ArraysGpu->Free(ViscDtg);      ViscDtg=NULL;
@@ -1144,6 +1149,7 @@ void JSphGpu::PosInteraction_Forces(){
   //Ellip
   ArraysGpu->Free(Ellipdot);  Ellipdot = NULL;
   ArraysGpu->Free(gradu_T);  gradu_T = NULL;
+  printf("\n fin pref force \n ");
 }
 
 //==============================================================================

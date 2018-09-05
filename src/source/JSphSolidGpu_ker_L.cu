@@ -4086,6 +4086,7 @@ __global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, b
 		double vol = ((4.0 / 3.0) * 3.1415*normeai*normebi*normeci);
 		if (vol > CTE.SizeDivision_M*PI*CTE.dp*CTE.dp*CTE.dp / 6.0) {
 			Divisionc_M[p] = true;
+			printf("\n DIV");
 		}
 
 	}
@@ -4096,13 +4097,6 @@ void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,bool *Divisi
 	if (npf) {
 		dim3 sgrid = cuSol::GetGridSize(np, DIVBSIZE);
 		KerCheckDivision << <sgrid, DIVBSIZE >> > (np,npb,JauEllipg,Divisionc_M,count);
-		for (int i = 0; i < np; i++)
-		{
-			if (Divisionc_M[i])
-			{
-				//count;
-			}
-		}
 	}
 }
 
@@ -4251,12 +4245,13 @@ void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cell
 __global__ void PrefixSumtoIndice(const bool* A, const unsigned* B, unsigned* C) {
 	int id = blockIdx.x*blockDim.x + threadIdx.x;
 	if (A[id]) C[B[id]] = id;
+	printf("id = %d", id);
 }
 
 void TriIndice(unsigned nb,bool *Divisionc_M,unsigned *PrefixSum, unsigned* TabIndice)
 {
 	//thrust::inclusive_scan(Divisionc_M, Divisionc_M + nb, PrefixSum);
-//	PrefixSumtoIndice(Divisionc_M, PrefixSum, TabIndice);
+	//PrefixSumtoIndice <<<1,nb>>> (Divisionc_M, PrefixSum, TabIndice);
 
 }
 

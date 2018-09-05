@@ -103,7 +103,7 @@ std::string getlicense_lgpl(const std::string &name,bool simple){
   return(tx);
 }
 
-//==============================================================================
+//==============================================================================+
 ///  Shows program version and finishes the execution.
 //==============================================================================
 bool ShowsVersion(int argc,char** argv){

@@ -889,7 +889,7 @@ void JSphGpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
 
 
 	// No div cellulaire atm
-	//RunSizeDivision_L();
+	RunSizeDivision_L();
     RunCellDivide(true);
 
     TimeStep+=stepdt;
@@ -929,7 +929,7 @@ void JSphGpuSingle::RunSizeDivision_L()
 	cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M, count);
 	printf("count = %d \n",count);
 	while (run) {
-		// 2. Prepare memory for count particles
+		// 2. Prepare memory for count particles .
 		//-Maximum number of particles that fit in the list.
 		unsigned nmax = GpuParticlesSize - 1;
 		if (Np >= 0x80000000)RunException(met, "The number of particles is too big.");//-Because the last bit is used to mark the direction in which a new periodic particle is created / Pq el ultimo bit se usa para marcar el sentido en que se crea la nueva periodica.
@@ -937,7 +937,7 @@ void JSphGpuSingle::RunSizeDivision_L()
 
 																					  //-Redimension memory for particles if there is insufficient space and repeat the search process.
 		if (count > nmax || count + Np > GpuParticlesSize) {
-			// Peut etre qu'ici on a la source de certains bug (trop particles, need extend)
+
 			ResizeParticlesSize(Np + count, PERIODIC_OVERMEMORYNP, false);
 		}
 		else {
@@ -946,11 +946,14 @@ void JSphGpuSingle::RunSizeDivision_L()
 		PrefixSum = ArraysGpu->ReserveUint();
 		TabIndice = ArraysGpu->ReserveUint();
 		cuSol::TriIndice(Np, Divisionc_M, PrefixSum, TabIndice);
+		ArraysGpu->Free(PrefixSum);
+		ArraysGpu->Free(TabIndice);
 		// 4. Divide marked particles
 		// Divide the selected particles in X direction
 		//cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcell,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M);
 		}
 	}
+	printf("count = %d \n", count);
 }
 
 //==============================================================================
