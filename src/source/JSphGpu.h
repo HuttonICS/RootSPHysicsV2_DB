@@ -197,6 +197,13 @@ protected:
   tmatrix3f *Ellipg;
   tmatrix3f *Ellipdot;
 
+  //CPU pour sauvegarde
+  tfloat3 *Pressc;
+  float *Porec;
+  tsymatrix3f *Tauc;
+  tfloat3 *ellipa;
+  tfloat3 *ellipb;
+  tfloat3 *ellipc;
   
   TimersGpu Timers;  ///<Declares an array with timers for CPU (type structure \ref StSphTimerGpu).
 
@@ -244,6 +251,7 @@ protected:
   void ConstantDataUp();
   void ParticlesDataUp(unsigned n);
   unsigned ParticlesDataDown(unsigned n,unsigned pini,bool code,bool cellorderdecode,bool onlynormal);
+  unsigned ParticlesDataDown_L(unsigned n, unsigned pini, bool code, bool cellorderdecode, bool onlynormal);
   
   void SelecDevice(int gpuid);
   void ConfigBlockSizes(bool usezone,bool useperi);

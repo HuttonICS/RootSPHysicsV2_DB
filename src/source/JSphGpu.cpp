@@ -46,7 +46,8 @@ using namespace std;
 JSphGpu::JSphGpu(bool withmpi):JSph(false,withmpi){
   ClassName="JSphGpu";
   Idp=NULL; Code=NULL; Dcell=NULL; Posxy=NULL; Posz=NULL; Velrhop=NULL;
-  AuxPos=NULL; AuxVel=NULL; AuxRhop=NULL;
+  AuxPos = NULL; AuxVel = NULL; AuxRhop = NULL; Pressc = NULL; Mass = NULL;
+  Porec = NULL; Ellipc = NULL; Tauc = NULL;
   CellDiv=NULL;
   FtoAuxDouble6=NULL; FtoAuxFloat9=NULL; //-Calculates forces on floating bodies.
   ArraysGpu=new JArraysGpu;
@@ -221,6 +222,9 @@ void JSphGpu::FreeCpuMemoryParticles(){
   delete[] AuxPos;     AuxPos=NULL;
   delete[] AuxVel;     AuxVel=NULL;
   delete[] AuxRhop;    AuxRhop=NULL;
+  delete[] Pressc;    Pressc = NULL;
+  delete[] Porec;    Porec = NULL;
+  delete[] Tauc;    Tauc = NULL;
   //delete[] Mass;    Mass = NULL;
 }
 
@@ -246,6 +250,13 @@ void JSphGpu::AllocCpuMemoryParticles(unsigned np){
       AuxRhop=new float[np];     MemCpuParticles+=sizeof(float)*np;
 	  Mass = new float[np];     MemCpuParticles += sizeof(float)*np;
 	  Ellipc = new tmatrix3f[np];     MemCpuParticles += sizeof(tmatrix3f)*np;
+	  Pressc = new tfloat3[np];     MemCpuParticles += sizeof(tfloat3)*np;
+	  Porec = new float[np];     MemCpuParticles += sizeof(float)*np;
+	  Tauc = new tsymatrix3f[np]; MemCpuParticles += sizeof(tsymatrix3f)*np;
+	  ellipa = new tfloat3[np];     MemCpuParticles += sizeof(tfloat3)*np;
+	  ellipb = new tfloat3[np];     MemCpuParticles += sizeof(tfloat3)*np;
+	  ellipc = new tfloat3[np];     MemCpuParticles += sizeof(tfloat3)*np;
+
     }
     catch(const std::bad_alloc){
       RunException(met,fun::PrintStr("Could not allocate the requested memory (np=%u).",np));
@@ -428,6 +439,7 @@ void JSphGpu::ReserveBasicArraysGpu(){
 
   // Matthias
   Divisionc_M = ArraysGpu->ReserveBool();
+  Pressg = ArraysGpu->ReserveFloat();
   Porec_M = ArraysGpu->ReserveFloat();
   Massc_M = ArraysGpu->ReserveFloat();
   //JauTauc_M = ArraysCpu->ReserveMatrix3f_M();
@@ -590,6 +602,54 @@ unsigned JSphGpu::ParticlesDataDown(unsigned n,unsigned pini,bool code,bool cell
   //-Reorder components in their original order. | Reordena componentes en su orden original.
   if(cellorderdecode)DecodeCellOrder(n,AuxPos,AuxVel);
   return(num);
+}
+
+//LUCAS
+
+unsigned JSphGpu::ParticlesDataDown_L(unsigned n, unsigned pini, bool code, bool cellorderdecode, bool onlynormal) {
+	unsigned num = n;
+	cudaMemcpy(Idp, Idpg + pini, sizeof(unsigned)*n, cudaMemcpyDeviceToHost);
+	cudaMemcpy(Posxy, Posxyg + pini, sizeof(double2)*n, cudaMemcpyDeviceToHost);
+	cudaMemcpy(Posz, Poszg + pini, sizeof(double)*n, cudaMemcpyDeviceToHost);
+	cudaMemcpy(Velrhop, Velrhopg + pini, sizeof(float4)*n, cudaMemcpyDeviceToHost);
+	cudaMemcpy(Mass, Massc_M + pini, sizeof(float)*n, cudaMemcpyDeviceToHost);
+	//cudaMemcpy(Pressc, Pressg + pini, sizeof(float3)*n, cudaMemcpyDeviceToHost);
+	cudaMemcpy(Porec,Porec_M + pini, sizeof(float)*n, cudaMemcpyDeviceToHost);
+	cudaMemcpy(Tauc, JauTauc2_M + pini, sizeof(tsymatrix3f)*n, cudaMemcpyDeviceToHost);
+	cudaMemcpy(Ellipc, Ellipg + pini, sizeof(tmatrix3f)*n, cudaMemcpyDeviceToHost);
+	if (code || onlynormal)cudaMemcpy(Code, Codeg + pini, sizeof(typecode)*n, cudaMemcpyDeviceToHost);
+	CheckCudaError("ParticlesDataDown", "Failed copying data from GPU.");
+	//-Eliminates abnormal particles (periodic and others). | Elimina particulas no normales (periodicas y otras).
+	if (onlynormal) {
+		unsigned ndel = 0;
+		for (unsigned p = 0; p<n; p++) {
+			const bool normal = CODE_IsNormal(Code[p]);
+			if (ndel && normal) {
+				Idp[p - ndel] = Idp[p];
+				Posxy[p - ndel] = Posxy[p];
+				Posz[p - ndel] = Posz[p];
+				Velrhop[p - ndel] = Velrhop[p];
+				Code[p - ndel] = Code[p];
+				//Pressc[p - ndel] = Pressc[p];
+				Ellipc[p - ndel] = Ellipc[p];
+			}
+			if (!normal)ndel++;
+		}
+		num -= ndel;
+	}
+
+	//-Converts data to a simple format. | Convierte datos a formato simple.
+	for (unsigned p = 0; p<n; p++) {
+		AuxPos[p] = TDouble3(Posxy[p].x, Posxy[p].y, Posz[p]);
+		AuxVel[p] = TFloat3(Velrhop[p].x, Velrhop[p].y, Velrhop[p].z);
+		AuxRhop[p] = Velrhop[p].w;
+		ellipa[p] = { Ellipc[p].a11 , Ellipc[p].a12 , Ellipc[p].a13 };
+		ellipb[p] = { Ellipc[p].a21 , Ellipc[p].a22 , Ellipc[p].a23 };
+		ellipc[p] = { Ellipc[p].a31 , Ellipc[p].a32 , Ellipc[p].a33 };
+	}
+	//-Reorder components in their original order. | Reordena componentes en su orden original.
+	if (cellorderdecode)DecodeCellOrder(n, AuxPos, AuxVel);
+	return(num);
 }
 
 
@@ -1044,8 +1104,8 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
   }   
   if(TVisco==VISCO_LaminarSPS)SpsGradvelg=ArraysGpu->ReserveSymatrix3f();
   // Matthias
-  Pressg = ArraysGpu->ReserveFloat();
-  Porec_M = ArraysGpu->ReserveFloat();
+  //Pressg = ArraysGpu->ReserveFloat();
+  //Porec_M = ArraysGpu->ReserveFloat();
   Press3Dc = ArraysGpu->ReserveFloat3();
   //JauGradvelc_M = ArraysCpu->ReserveMatrix3f_M();
   JauGradvelc2_M = ArraysGpu->ReserveSymatrix3f();
@@ -1092,9 +1152,9 @@ void JSphGpu::PosInteraction_Forces(){
   ArraysGpu->Free(JauGradvelc2_M);  JauGradvelc2_M = NULL;
   ArraysGpu->Free(JauTauDot_M);  JauTauDot_M = NULL;
   ArraysGpu->Free(JauOmega_M);  JauOmega_M = NULL;
-  ArraysGpu->Free(Pressg);  Pressg = NULL;
+  //ArraysGpu->Free(Pressg);  Pressg = NULL;
   ArraysGpu->Free(Press3Dc);  Press3Dc = NULL;
-  ArraysGpu->Free(Porec_M);  Porec_M = NULL;
+  //ArraysGpu->Free(Porec_M);  Porec_M = NULL;
 }
 
 //==============================================================================

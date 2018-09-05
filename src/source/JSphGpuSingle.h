@@ -70,6 +70,7 @@ protected:
   void RunGaugeSystem(double timestep);
 
   void SaveData();
+  void SaveData_L();
   void FinishRun(bool stop);
  
 
