@@ -340,7 +340,7 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   float4      *velrhoppre=SaveArrayGpu(Np,VelrhopPreg);
   tsymatrix3f *spstau    =SaveArrayGpu(Np,SpsTaug);
   // Matthias
-  bool		  *division = SaveArrayGpu(Np, Divisionc_M);
+  unsigned		  *division = SaveArrayGpu(Np, Divisionc_M);
   float		  *pore = SaveArrayGpu(Np, Porec_M);
   float		  *mass = SaveArrayGpu(Np, Massc_M);
   float		  *massm1 = SaveArrayGpu(Np, MassM1c_M);
@@ -388,7 +388,7 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   if(velrhoppre)VelrhopPreg=ArraysGpu->ReserveFloat4();
   if(spstau)    SpsTaug    =ArraysGpu->ReserveSymatrix3f();
   // Matthias
-  Divisionc_M = ArraysGpu->ReserveBool();
+  Divisionc_M = ArraysGpu->ReserveUint();
   Porec_M = ArraysGpu->ReserveFloat();
   Massc_M = ArraysGpu->ReserveFloat();
   MassM1c_M = ArraysGpu->ReserveFloat();
@@ -468,7 +468,7 @@ void JSphGpu::ReserveBasicArraysGpu(){
   if(TVisco==VISCO_LaminarSPS)SpsTaug=ArraysGpu->ReserveSymatrix3f();
 
   // Matthias
-  Divisionc_M = ArraysGpu->ReserveBool();
+  Divisionc_M = ArraysGpu->ReserveUint();
   Massc_M = ArraysGpu->ReserveFloat();
   //JauTauc_M = ArraysCpu->ReserveMatrix3f_M();
   JauTauc2_M = ArraysGpu->ReserveSymatrix3f();
@@ -869,7 +869,7 @@ void JSphGpu::InitRun() {
 	// Matthias
 	//memset(JauTauc_M, 0, sizeof(tmatrix3f)*Np);
 	cudaMemset(JauTauc2_M, 0, sizeof(tsymatrix3f)*Np);
-	cudaMemset(Divisionc_M, 0, sizeof(bool)*Np);
+	cudaMemset(Divisionc_M, 0, sizeof(UINT)*Np);
 	cudaMemcpy(MassM1c_M, Massc_M, sizeof(float)*Np, cudaMemcpyDeviceToDevice);
 	cudaDeviceSynchronize();
 	if (UseDEM)DemDtForce = DtIni; //(DEM )

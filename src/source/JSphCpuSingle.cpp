@@ -1403,7 +1403,7 @@ void JSphCpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
 	  VisuParticleSummary();
 	  printf("---7---");
 	  //-Initialisation of execution variables. | Inicializacion de variables de ejecucion.
-	  //------------------------------------------------------------------------------------
+	  //-----------------------------------------------------------------------------------
 	  InitRun();
   }
   
@@ -1440,7 +1440,7 @@ void JSphCpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
     if(CaseNmoving)RunMotion(stepdt);
 
 	// Matthias - Cell division
-	//RunSizeDivision_M();
+	RunSizeDivision_M();
 	//RunDivisionDisplacement_M();
 	RunCellDivide(true);
 

@@ -173,7 +173,7 @@ protected:
   tsymatrix3f *SpsGradvelg;   ///<Velocity gradients.
 
 							  // Matthias - Pore pressure
-  bool *Divisionc_M;
+  unsigned *Divisionc_M;
   float *Porec_M;
   float *Massc_M; // Mass, Delta mass
 				  //float TimeGoing;

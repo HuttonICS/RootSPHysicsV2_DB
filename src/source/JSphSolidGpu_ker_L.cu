@@ -4078,7 +4078,7 @@ if (p < n) {
 	velrhopnew[p].w = (rhopnew < RhopZero ? RhopZero : rhopnew);
 }
 }
-__global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, bool *Divisionc_M, unsigned &count)
+__global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, unsigned *Divisionc_M, unsigned count)
 {
 	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
 	if (p < n) {
@@ -4087,22 +4087,28 @@ __global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, b
 		float normeci = sqrt(Ellipg[p].a31*Ellipg[p].a31 + Ellipg[p].a32*Ellipg[p].a32 + Ellipg[p].a33*Ellipg[p].a33);
 		double vol = ((4.0 / 3.0) * 3.1415*normeai*normebi*normeci);
 		if (vol > CTE.SizeDivision_M*PI*CTE.dp*CTE.dp*CTE.dp / 6.0) {
-			Divisionc_M[p] = true;
+			Divisionc_M[p] = 1;
 		}
 	}
 }
-void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,bool *Divisionc_M,unsigned &count)
+void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,unsigned *Divisionc_M,unsigned &count)
 {
 	const unsigned npf = np - npb;
 	if (npf) {
+		unsigned NbDiv;
 		dim3 sgrid = cuSol::GetGridSize(np, DIVBSIZE);
-		KerCheckDivision << <sgrid, DIVBSIZE >> > (np,npb,JauEllipg,Divisionc_M,count);
+		KerCheckDivision << <sgrid, DIVBSIZE >> > (np,npb,JauEllipg,Divisionc_M,NbDiv);
+		for (int i = 0; i < npf; i++)
+		{
+			if (Divisionc_M[i]) { NbDiv++; }
+		}
+		cudaMemcpy(&count, &NbDiv, sizeof(UINT), cudaMemcpyDeviceToHost);
 	}
 }
 
 __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini, tuint3 cellmax
 	, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy,double *posz, float4 *velrhop, tsymatrix3f *taup
-	, bool *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1,unsigned *IndiceDiv,tmatrix3f *Ellipg)
+	, unsigned *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1,unsigned *IndiceDiv,tmatrix3f *Ellipg)
 {
 	printf("oki");
 	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
@@ -4112,7 +4118,7 @@ __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini,
 		float3 orientation;
 		const unsigned pnew = np + p;
 		//int numAxe = MainAxis(Ellipg[p]);
-		int numAxe = 0;
+		int numAxe = 1;
 		switch (numAxe)
 		{
 		case 1:
@@ -4145,9 +4151,10 @@ __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini,
 		cx = (cx <= cellmax.x ? cx : cellmax.x);
 		cy = (cy <= cellmax.y ? cy : cellmax.y);
 		cz = (cz <= cellmax.z ? cz : cellmax.z);
-
+		printf("pnew = %d", pnew);
+	}
 		//-Record position and cell of new particles /  Graba posicion y celda de nuevas particulas.
-		posxy[pnew].x = ps.x;
+		/*	posxy[pnew].x = ps.x;
 		posxy[pnew].y = ps.y;
 		posz[pnew] = ps.z;
 		dcell[pnew] = PC__Cell(CTECDiv.DomCellCode, cx, cy, cz);
@@ -4160,7 +4167,7 @@ __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini,
 		velrhopm1[pnew] = velrhopm1[p];
 		taupm1[pnew] = taupm1[p];
 		masspm1[pnew] = masspm1[p] / 2;
-		divisionp[pnew] = false;
+		divisionp[pnew] = 0;
 		switch (numAxe)
 		{
 		case 1:
@@ -4207,7 +4214,7 @@ __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini,
 		dcell[p] = PC__Cell(CTECDiv.DomCellCode, cx, cy, cz);
 		massp[p] = massp[pnew];
 		masspm1[p] = masspm1[pnew];
-		divisionp[p] = false;
+		divisionp[p] = 0;
 		switch (numAxe)
 		{
 		case 1:
@@ -4229,12 +4236,12 @@ __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini,
 			break;
 		}
 		
-	}
+	}*/
 }
 
 void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cellmax
 	, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy, double *posz, float4 *velrhop, tsymatrix3f *taup
-	, bool *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1, unsigned *IndiceDiv, tmatrix3f *Ellipg)
+	, unsigned *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1, unsigned *IndiceDiv, tmatrix3f *Ellipg)
 {
 	const unsigned npf = np;
 	if (npf) {
@@ -4244,13 +4251,13 @@ void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cell
 	}
 }
 
-__global__ void PrefixSumtoIndice(const bool* A, const unsigned* B, unsigned* C) {
+__global__ void PrefixSumtoIndice(const unsigned* A, const unsigned* B, unsigned* C) {
 	int id = blockIdx.x*blockDim.x + threadIdx.x;
 	if (A[id]) C[B[id]] = id;
 	printf("infos : Id = %d / B[id] = %d C[id] = %d \n", id, B[id], C[id]);
 }
 
-void TriIndice(unsigned nb,bool *Divisionc_M,unsigned *PrefixSum, unsigned* TabIndice)
+void TriIndice(unsigned nb,unsigned *Divisionc_M,unsigned *PrefixSum, unsigned* TabIndice)
 {
 	thrust::inclusive_scan(thrust::device,Divisionc_M, Divisionc_M + nb, PrefixSum);
 	PrefixSumtoIndice <<<1,nb>>> (Divisionc_M, PrefixSum, TabIndice);

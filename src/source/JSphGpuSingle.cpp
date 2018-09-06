@@ -867,7 +867,7 @@ void JSphGpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
   //-Main Loop.
   //-------------
  
-  JTimeControl tc("30,60,300,600");//-Shows information at 0.5, 1, 5 y 10 minutes (before first PART).
+  JTimeControl tc("30,60,300,600");//-Shows information at 0.5, 1, 5 y 10 minutes (before first PART)
   bool partoutstop=false;
   TimerSim.Start();
   TimerPart.Start();
@@ -926,8 +926,7 @@ void JSphGpuSingle::RunSizeDivision_L()
 	bool run = true;
 	unsigned count = 0;
 	//1 Check Division 
-	NbDiv = ArraysGpu->ReserveUint();
-	cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M, count);
+	cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M,count);
 	printf("count = %d \n",count);
 	while (run) {
 		// 2. Prepare memory for count particles .
@@ -951,6 +950,7 @@ void JSphGpuSingle::RunSizeDivision_L()
 		cuSol::TriIndice(Np, Divisionc_M, PrefixSum, TabIndice);
 		ArraysGpu->Free(PrefixSum);
 		ArraysGpu->Free(TabIndice);
+		ArraysGpu->Free(NbDiv);
 		// 4. Divide marked particles.
 		// Divide the selected particles in X direction.
 		cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcell,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M,TabIndice,Ellipg);
