@@ -1439,8 +1439,8 @@ void JSphCpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
     if(PartDtMin>stepdt)PartDtMin=stepdt; if(PartDtMax<stepdt)PartDtMax=stepdt;
     if(CaseNmoving)RunMotion(stepdt);
 
-	// Matthias - Cell division
-	RunSizeDivision_M();
+	//Matthias - Cell division
+	//RunSizeDivision_M();
 	//RunDivisionDisplacement_M();
 	RunCellDivide(true);
 

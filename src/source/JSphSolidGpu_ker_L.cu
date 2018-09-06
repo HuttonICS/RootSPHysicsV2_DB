@@ -4078,7 +4078,7 @@ if (p < n) {
 	velrhopnew[p].w = (rhopnew < RhopZero ? RhopZero : rhopnew);
 }
 }
-__global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, unsigned *Divisionc_M, unsigned count)
+__global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, unsigned *Divisionc_M, unsigned *count)
 {
 	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
 	if (p < n) {
@@ -4091,18 +4091,17 @@ __global__ void KerCheckDivision(unsigned n, unsigned pini, tmatrix3f *Ellipg, u
 		}
 	}
 }
-void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,unsigned *Divisionc_M,unsigned &count)
+void CheckDivision_L(unsigned np, unsigned npb,tmatrix3f *JauEllipg,unsigned *Divisionc_M,unsigned *NbDiv)
 {
 	const unsigned npf = np - npb;
 	if (npf) {
-		unsigned NbDiv;
 		dim3 sgrid = cuSol::GetGridSize(np, DIVBSIZE);
 		KerCheckDivision << <sgrid, DIVBSIZE >> > (np,npb,JauEllipg,Divisionc_M,NbDiv);
 		for (int i = 0; i < npf; i++)
 		{
-			if (Divisionc_M[i]) { NbDiv++; }
+			if (Divisionc_M[i])  {NbDiv[0]++; }
 		}
-		cudaMemcpy(&count, &NbDiv, sizeof(UINT), cudaMemcpyDeviceToHost);
+		//cudaMemcpy(&count, &NbDiv, sizeof(UINT), cudaMemcpyDeviceToHost);
 	}
 }
 
@@ -4110,7 +4109,6 @@ __global__ void KerMarkedDivision(unsigned countMax, unsigned np, unsigned pini,
 	, unsigned *idp, typecode *code, unsigned *dcell, double2 *posxy,double *posz, float4 *velrhop, tsymatrix3f *taup
 	, unsigned *divisionp, float *porep, float *massp, float4 *velrhopm1, tsymatrix3f *taupm1, float *masspm1,unsigned *IndiceDiv,tmatrix3f *Ellipg)
 {
-	printf("oki");
 	unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned oldp = IndiceDiv[p];
 	if (oldp < np) {
@@ -4247,20 +4245,20 @@ void MarkedDivision_L(unsigned countMax, unsigned np, unsigned pini, tuint3 cell
 	if (npf) {
 		dim3 sgrid = cuSol::GetGridSize(npf, DIVBSIZE);
 		KerMarkedDivision << <sgrid, DIVBSIZE >> > (countMax, np, pini, cellmax, idp, code, dcell, posxy, posz, velrhop, taup, divisionp, porep, massp, velrhopm1, taupm1, masspm1, IndiceDiv, Ellipg);
-	
 	}
 }
 
 __global__ void PrefixSumtoIndice(const unsigned* A, const unsigned* B, unsigned* C) {
-	int id = blockIdx.x*blockDim.x + threadIdx.x;
+	unsigned id = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x;
 	if (A[id]) C[B[id]] = id;
 	printf("infos : Id = %d / B[id] = %d C[id] = %d \n", id, B[id], C[id]);
 }
 
 void TriIndice(unsigned nb,unsigned *Divisionc_M,unsigned *PrefixSum, unsigned* TabIndice)
 {
-	thrust::inclusive_scan(thrust::device,Divisionc_M, Divisionc_M + nb, PrefixSum);
-	PrefixSumtoIndice <<<1,nb>>> (Divisionc_M, PrefixSum, TabIndice);
+	dim3 sgrid = cuSol::GetGridSize(nb, DIVBSIZE);
+	thrust::inclusive_scan(thrust::device, Divisionc_M, Divisionc_M + nb, PrefixSum);
+	PrefixSumtoIndice <<<sgrid, DIVBSIZE >>> (Divisionc_M, PrefixSum, TabIndice);
 
 }
 
