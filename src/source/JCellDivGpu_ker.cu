@@ -623,6 +623,23 @@ __global__ void KerSortDataParticles(unsigned n,unsigned pini,const unsigned *so
   }
 }
 
+//------------------------------------------------------------------------------
+/// kernel Sort lucas
+//------------------------------------------------------------------------------
+__global__ void KerSortDataParticles(unsigned n, unsigned pini, const unsigned *sortpart, const tsymatrix3f *a, const float *b, const tsymatrix3f *c, const float *d, const unsigned *e, const float *f, tsymatrix3f *a2, float *b2, tsymatrix3f *c2, float *d2, unsigned *e2, float *f2)
+{
+	const unsigned p = blockIdx.y*gridDim.x*blockDim.x + blockIdx.x*blockDim.x + threadIdx.x; //-Particle number.
+	if (p<n) {
+		const unsigned oldpos = (p<pini ? p : sortpart[p]);
+		a2[p] = a[oldpos];
+		b2[p] = b[oldpos];
+		c2[p] = c[oldpos];
+		d2[p] = d[oldpos];
+		e2[p] = e[oldpos];
+		f2[p] = f[oldpos];
+	}
+}
+
 //==============================================================================
 /// Reorders particle data according to sortpart.
 /// Reordena datos de particulas segun sortpart.
@@ -675,6 +692,16 @@ void SortDataParticles(unsigned np,unsigned pini,const unsigned *sortpart,const 
     dim3 sgrid=GetGridSize(np,DIVBSIZE);
     KerSortDataParticles <<<sgrid,DIVBSIZE>>>(np,pini,sortpart,a,a2);
   }
+}
+
+//==============================================================================
+/// Sort Lucas
+//==============================================================================
+void SortDataParticles(unsigned np, unsigned pini, const unsigned *sortpart, const tsymatrix3f *a, const float *b, const tsymatrix3f *c, const float *d, const unsigned *e, const float *f, tsymatrix3f *a2, float *b2, tsymatrix3f *c2, float *d2, unsigned *e2, float *f2) {
+	if (np) {
+		dim3 sgrid = GetGridSize(np, DIVBSIZE);
+		KerSortDataParticles << <sgrid, DIVBSIZE >> >(np, pini, sortpart, a, b, c, d, e, f, a2, b2, c2, d2, e2, f2);
+	}
 }
 
 //------------------------------------------------------------------------------

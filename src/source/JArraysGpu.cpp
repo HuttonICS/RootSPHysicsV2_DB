@@ -112,7 +112,6 @@ void JArraysGpuSize::SetArraySize(unsigned size){
 void* JArraysGpuSize::Reserve(){
   if(CountUsed==Count||!ArraySize)RunException("Reserve",fun::PrintStr("There are no arrays available with %u bytes.",ElementSize));
   CountUsed++;
-  printf("reserve %d/%d/%d \n", ElementSize, CountUsed, Count);
   CountUsedMax=max(CountUsedMax,CountUsed);
   return(Pointers[CountUsed-1]);
 }
@@ -127,10 +126,10 @@ unsigned JArraysGpuSize::FindPointerUsed(void *pointer)const{
   return(pos>=CountUsed? MAXPOINTERS: pos);
 }
 
-//==============================================================================
+//===============================================================================
 /// Libera la reserva de un array.
 /// Frees an allocated array.
-//==============================================================================
+//===============================================================================
 void JArraysGpuSize::Free(void *pointer){
   if(pointer){
     unsigned pos=FindPointerUsed(pointer);
@@ -139,7 +138,6 @@ void JArraysGpuSize::Free(void *pointer){
       void *aux=Pointers[CountUsed-1]; Pointers[CountUsed-1]=Pointers[pos]; Pointers[pos]=aux;
     }
     CountUsed--;
-	printf("free %d/%d/%d \n", ElementSize, CountUsed, Count);
   }
 }  
 
@@ -219,21 +217,15 @@ llong JArraysGpu::GetAllocMemoryGpu()const{
 //==============================================================================
 void JArraysGpu::SetArraySize(unsigned size){ 
   //-Frees memory.
-	printf("count used = %d ", Arrays1b->GetArrayCountUsed());
   Arrays1b->SetArraySize(0); 
-  printf("count used = %d ", Arrays2b->GetArrayCountUsed());
   Arrays2b->SetArraySize(0); 
-  printf("count used = %d ", Arrays4b->GetArrayCountUsed());
   Arrays4b->SetArraySize(0);
-  printf("count used = %d ", Arrays8b->GetArrayCountUsed());
   Arrays8b->SetArraySize(0); 
-  printf("count used = %d ", Arrays12b->GetArrayCountUsed());
   Arrays12b->SetArraySize(0);
   Arrays16b->SetArraySize(0);
   Arrays24b->SetArraySize(0);
   Arrays32b->SetArraySize(0);
   Arrays36b->SetArraySize(0);
-  printf("count used = %d ", Arrays36b->GetArrayCount());
   //-Allocates memory.
   Arrays1b->SetArraySize(size); 
   Arrays2b->SetArraySize(size); 

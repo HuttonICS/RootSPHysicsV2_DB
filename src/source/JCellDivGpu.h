@@ -148,6 +148,7 @@ public:
   void SortDataArrays(const float *a,const float *b,float *a2,float *b2);
   void SortDataArrays(const double2 *a,const double *b,const float4 *c,double2 *a2,double *b2,float4 *c2);
   void SortDataArrays(const tsymatrix3f *a,tsymatrix3f *a2);
+  void JCellDivGpu::SortDataArrays(const tsymatrix3f *a, const float *b, const tsymatrix3f *c, const float *d, const unsigned *e, const float *f, tsymatrix3f *a2, float *b2, tsymatrix3f *c2, float *d2, unsigned *e2, float *f2);
 
   float* GetAuxMem(unsigned size);
 

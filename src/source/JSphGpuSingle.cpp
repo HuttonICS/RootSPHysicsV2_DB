@@ -274,17 +274,17 @@ void JSphGpuSingle::ConfigDomain(){
   // Calculation ellipse
   for (unsigned p = 0; p < Np; p++) {
 	  //vect 1
-	  Ellipc[p].a11 = Dp / 2;
+	  Ellipc[p].a11 = Dp / 2.0;
 	  Ellipc[p].a12 = 0;
 	  Ellipc[p].a13 = 0;
 	  //vect 2
 	  Ellipc[p].a21 = 0;
-	  Ellipc[p].a22 = Dp / 2;
+	  Ellipc[p].a22 = Dp / 2.0;
 	  Ellipc[p].a23 = 0;
 	  //vect 3
 	  Ellipc[p].a31 = 0;
 	  Ellipc[p].a32 = 0;
-	  Ellipc[p].a33 = Dp / 2;
+	  Ellipc[p].a33 = Dp / 2.0;
   }
   //-Computes radius of floating bodies.
   if(CaseNfloat && PeriActive!=0 && !PartBegin)CalcFloatingRadius(Np,AuxPos,Idp);
@@ -532,7 +532,7 @@ void JSphGpuSingle::RunCellDivide(bool updateperiodic){
   //-Initiates Divide.
   CellDivSingle->Divide(Npb,Np-Npb-NpbPer-NpfPer,NpbPer,NpfPer,BoundChanged,Dcellg,Codeg,Timers,Posxyg,Poszg,Idpg);
 
-  //-Sorts particle data. | Ordena datos de particulas.
+  //-Sorts particle data. | Ordena datos de particulas..
   TmgStart(Timers,TMG_NlSortData);
   {
     unsigned* idpg=ArraysGpu->ReserveUint();
@@ -570,6 +570,21 @@ void JSphGpuSingle::RunCellDivide(bool updateperiodic){
     swap(SpsTaug,spstaug);  ArraysGpu->Free(spstaug);
   }
 
+  //Lucas
+ /* tsymatrix3f *jauTauM1c2_Mg = ArraysGpu->ReserveSymatrix3f();
+  float *massg = ArraysGpu->ReserveFloat();
+  tsymatrix3f *jauTauc2_Mg = ArraysGpu->ReserveSymatrix3f();
+  float *massM1g = ArraysGpu->ReserveFloat();
+  unsigned *divisiong = ArraysGpu->ReserveUint();
+  float *poreg = ArraysGpu->ReserveFloat();
+  CellDivSingle->SortDataArrays(JauTauc2_M, Massc_M, JauTauM1c2_M, MassM1c_M, Divisionc_M, Porec_M, jauTauM1c2_Mg, massg, jauTauc2_Mg, massM1g, divisiong, poreg);
+  swap(JauTauc2_M, jauTauM1c2_Mg);        ArraysGpu->Free(jauTauM1c2_Mg);
+  swap(Massc_M, massg);			     ArraysGpu->Free(massg);
+  swap(JauTauM1c2_M, jauTauc2_Mg);		 ArraysGpu->Free(jauTauc2_Mg);
+  swap(MassM1c_M, massM1g);				 ArraysGpu->Free(massM1g);
+  swap(Divisionc_M, divisiong);			 ArraysGpu->Free(divisiong);
+  swap(Porec_M, poreg);				 ArraysGpu->Free(poreg);*/
+
   //-Collect divide data. | Recupera datos del divide.
   Np=CellDivSingle->GetNpFinal();
   Npb=CellDivSingle->GetNpbFinal();
@@ -577,11 +592,9 @@ void JSphGpuSingle::RunCellDivide(bool updateperiodic){
 
   //-Manages excluded particles fixed, moving and floating before aborting the execution.
   if(CellDivSingle->GetNpbOut())AbortBoundOut();
-
   //-Collect position of floating particles. | Recupera posiciones de floatings..
   if(CaseNfloat)cusph::CalcRidp(PeriActive!=0,Np-Npb,Npb,CaseNpb,CaseNpb+CaseNfloat,Codeg,Idpg,FtRidpg);
   TmgStop(Timers,TMG_NlSortData);
-
   //-Control of excluded particles (only fluid because excluded boundary are checked before).
   //-Gestion de particulas excluidas (solo fluid porque las boundary excluidas se comprueban antes).
   TmgStart(Timers,TMG_NlOutCheck);
@@ -606,7 +619,7 @@ void JSphGpuSingle::AbortBoundOut(){
   JSph::AbortBoundOut(nboundout,Idp,AuxPos,AuxVel,AuxRhop,Code);
 }
 
-//===============================================================================
+//==============================================================================
 /// Interaction for force computation.
 /// Interaccion para el calculo de fuerzas
 //==============================================================================
@@ -645,7 +658,6 @@ void JSphGpuSingle::Interaction_Forces(TpInter tinter){
 
   //-Computes Tau for Laminar+SPS.
   //if(lamsps)cusph::ComputeSpsTau(Np,Npb,SpsSmag,SpsBlin,Velrhopg,SpsGradvelg,SpsTaug);
-
   if(Deltag)cusph::AddDelta(Np-Npb,Deltag+Npb,Arg+Npb);//-Adds the Delta-SPH correction for the density. | Añade correccion de Delta-SPH a Arg[]. 
   CheckCudaError(met,"Failed while executing kernels of interaction.");
 
@@ -923,16 +935,27 @@ void JSphGpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
 void JSphGpuSingle::RunSizeDivision_L()
 {
 	const char met[] = "RunSizeDivision_L";
+	unsigned count;
 	bool run = true;
-	unsigned count = 0;
 	//1 Check Division 
-	NbDiv = ArraysGpu->ReserveUint();
-	cudaMemset(Divisionc_M, 0, sizeof(UINT)*Np);
-	cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M,NbDiv);
-	cudaMemcpy(&count, NbDiv, sizeof(UINT), cudaMemcpyDeviceToHost);
-	printf("count = %d \n",count);
+	NbDiv = ArraysGpu->ReserveUint(); //useless
+	cudaMemset(NbDiv, 0, sizeof(UINT)*Np); //useless
+	cudaMemset(Divisionc_M, 0, sizeof(UINT)*Np); // Division = False for every particles 
+	cuSol::CheckDivision_L(Np, Npb, Ellipg, Divisionc_M,NbDiv); //Check the division 
+	cudaDeviceSynchronize();
+	ArraysGpu->Free(NbDiv); //useless 
+
+	//2. Sort the number of divided particles.
+	PrefixSum = ArraysGpu->ReserveUint(); // Reserve Arrays for Sum + Sort
+	TabIndice = ArraysGpu->ReserveUint();
+	cudaMemset(PrefixSum, 0, sizeof(UINT)*Np);
+	cudaMemset(TabIndice, 0, sizeof(UINT)*Np);
+	cuSol::TriIndice(Np, Divisionc_M, PrefixSum, TabIndice); //Sort and Sum of Divisioc_M . TabIndice contains the code of the particles which will be divided.
+	cudaDeviceSynchronize();
+	cudaMemcpy(&count, &PrefixSum[Np - 1], sizeof(UINT), cudaMemcpyDeviceToHost); //last number of PrefixSum = Number of divided particles
+	ArraysGpu->Free(PrefixSum);
 	while (run) {
-		// 2. Prepare memory for count particles .
+		// 3. Prepare memory for count particles .
 		//-Maximum number of particles that fit in the list.
 		unsigned nmax = GpuParticlesSize - 1;
 		if (Np >= 0x80000000)RunException(met, "The number of particles is too big.");//-Because the last bit is used to mark the direction in which a new periodic particle is created / Pq el ultimo bit se usa para marcar el sentido en que se crea la nueva periodica.
@@ -940,26 +963,23 @@ void JSphGpuSingle::RunSizeDivision_L()
 
 																					  //-Redimension memory for particles if there is insufficient space and repeat the search process.
 		if (count > nmax || count + Np > GpuParticlesSize) {
-
 			ResizeParticlesSize(Np + count, PERIODIC_OVERMEMORYNP, false);
 		}
 		else {
 		run = false;
-		//3. Sort the number of divided particles..
-		PrefixSum = ArraysGpu->ReserveUint();
-		TabIndice = ArraysGpu->ReserveUint();
-		cudaMemset(PrefixSum, 0, sizeof(UINT)*Np);
-		cudaMemset(TabIndice, 0, sizeof(UINT)*Np);
-		cuSol::TriIndice(Np, Divisionc_M, PrefixSum, TabIndice);
-		ArraysGpu->Free(PrefixSum);
-		ArraysGpu->Free(TabIndice);
-		ArraysGpu->Free(NbDiv);
 		// 4. Divide marked particles.
-		// Divide the selected particles in X direction.
-		//cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcell,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M,TabIndice,Ellipg);
+		// Divide the selected particles in X direction
+
+		cuSol::MarkedDivision_L(count, Np, Npb, DomCells, Idpg, Codeg, Dcellg,Posxyg,Poszg, Velrhopg, JauTauc2_M, Divisionc_M, Porec_M, Massc_M, VelrhopM1g, JauTauM1c2_M, MassM1c_M,TabIndice,Ellipg); //delete Porep, useless
+		cudaError_t cuerr = cudaGetLastError();
+		if (cuerr != cudaSuccess) {
+			RunExceptionCuda(met, fun::PrintStr("Erreur"), cuerr); // memory access issue in markeddiv
+		}
+		cudaDeviceSynchronize(); 
+		Np += count; //Update np
 		}
 	}
-	printf("count = %d \n", count);
+	ArraysGpu->Free(TabIndice);
 }
 
 //==============================================================================

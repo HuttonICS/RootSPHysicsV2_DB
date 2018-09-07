@@ -160,7 +160,7 @@ void JCellDivGpuSingle::Divide(unsigned npb1,unsigned npf1,unsigned npb2,unsigne
   //-Calculate domain limits | Calcula limites del dominio.
   CalcCellDomain(dcellg,codeg);
   //-Calculate number of cells for divide and check reservation of memory for cells.
-  //-Calcula numero de celdas para el divide y comprueba reserva de memoria para celdas.
+  //-Calcula numero de celdas para el divide y comprueba reserva de memoria para celdas.0
   PrepareNct();
   //-Checks if the allocated memory is sufficient for Nptot.
   //-Comprueba si hay memoria reservada y si es suficiente para Nptot.

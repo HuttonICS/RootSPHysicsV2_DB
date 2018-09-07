@@ -47,7 +47,7 @@ JSphGpu::JSphGpu(bool withmpi):JSph(false,withmpi){
   ClassName="JSphGpu";
   Idp=NULL; Code=NULL; Dcell=NULL; Posxy=NULL; Posz=NULL; Velrhop=NULL;
   AuxPos=NULL; AuxVel=NULL; AuxRhop=NULL;
-  CellDiv=NULL;
+  CellDiv = NULL; Mass = NULL; Ellipc = NULL;
   FtoAuxDouble6=NULL; FtoAuxFloat9=NULL; //-Calculates forces on floating bodies.
   ArraysGpu=new JArraysGpu;
   InitVars();
@@ -221,7 +221,8 @@ void JSphGpu::FreeCpuMemoryParticles(){
   delete[] AuxPos;     AuxPos=NULL;
   delete[] AuxVel;     AuxVel=NULL;
   delete[] AuxRhop;    AuxRhop=NULL;
-  //delete[] Mass;    Mass = NULL;
+  delete[] Mass;    Mass = NULL;
+  delete[] Ellipc;	Ellipc = NULL;
 }
 
 //==============================================================================
@@ -341,14 +342,14 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   tsymatrix3f *spstau    =SaveArrayGpu(Np,SpsTaug);
   // Matthias
   unsigned		  *division = SaveArrayGpu(Np, Divisionc_M);
-  float		  *pore = SaveArrayGpu(Np, Porec_M);
   float		  *mass = SaveArrayGpu(Np, Massc_M);
   float		  *massm1 = SaveArrayGpu(Np, MassM1c_M);
-  //float		  *volu = SaveArrayCpu(Np, Voluc_M);	
+  //float		  *volu = SaveArrayCpu(Np, Voluc_M);;	
   //tmatrix3f *jautau = SaveArrayCpu(Np, JauTauc_M);
   tsymatrix3f *jautau2 = SaveArrayGpu(Np, JauTauc2_M);
   tsymatrix3f *jautaum12 = SaveArrayGpu(Np, JauTauM1c2_M);
   tmatrix3f *ellip = SaveArrayGpu(Np, Ellipg);
+  unsigned *tabindice = SaveArrayGpu(Np, TabIndice);
   //-Frees pointers.
   ArraysGpu->Free(Idpg);
   ArraysGpu->Free(Codeg);
@@ -363,7 +364,6 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   ArraysGpu->Free(SpsTaug);
   // Matthias
   ArraysGpu->Free(Divisionc_M);
-  ArraysGpu->Free(Porec_M);
   ArraysGpu->Free(Massc_M);
   ArraysGpu->Free(MassM1c_M);
   //ArraysCpu->Free(Voluc_M);
@@ -371,6 +371,7 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   ArraysGpu->Free(JauTauc2_M);
   ArraysGpu->Free(JauTauM1c2_M);
   ArraysGpu->Free(Ellipg);
+  ArraysGpu->Free(TabIndice);
   //-Resizes GPU memory allocation.
   const double mbparticle=(double(MemGpuParticles)/(1024*1024))/GpuParticlesSize; //-MB por particula.
   Log->Printf("**JSphGpu: Requesting gpu memory for %u particles: %.1f MB.",npnew,mbparticle*npnew);
@@ -389,13 +390,14 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   if(spstau)    SpsTaug    =ArraysGpu->ReserveSymatrix3f();
   // Matthias
   Divisionc_M = ArraysGpu->ReserveUint();
-  Porec_M = ArraysGpu->ReserveFloat();
   Massc_M = ArraysGpu->ReserveFloat();
   MassM1c_M = ArraysGpu->ReserveFloat();
   //Voluc_M = ArraysCpu->ReserveFloat();
   //JauTauc_M = ArraysCpu->ReserveMatrix3f_M();
   JauTauc2_M = ArraysGpu->ReserveSymatrix3f();
   if (velrhopm1) JauTauM1c2_M = ArraysGpu->ReserveSymatrix3f();
+  TabIndice = ArraysGpu->ReserveUint();
+  Ellipg = ArraysGpu->ReserveMatrix3f_M();
   //-Restore data in GPU memory.
   RestoreArrayGpu(Np,idp,Idpg);
   RestoreArrayGpu(Np,code,Codeg);
@@ -410,7 +412,6 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   RestoreArrayGpu(Np,spstau,SpsTaug);
   // Matthias
   RestoreArrayGpu(Np, division, Divisionc_M);
-  RestoreArrayGpu(Np, pore, Porec_M);
   RestoreArrayGpu(Np, mass, Massc_M);
   RestoreArrayGpu(Np, massm1, MassM1c_M);
   //RestoreArrayCpu(Np, volu, Porec_M);
@@ -418,6 +419,7 @@ void JSphGpu::ResizeGpuMemoryParticles(unsigned npnew){
   RestoreArrayGpu(Np, jautau2, JauTauc2_M);
   RestoreArrayGpu(Np, jautaum12, JauTauM1c2_M);
   RestoreArrayGpu(Np, ellip, Ellipg);
+  RestoreArrayGpu(Np, tabindice, TabIndice);
   //-Updates values.
   GpuParticlesSize=npnew;
   MemGpuParticles=ArraysGpu->GetAllocMemoryGpu();
@@ -1079,7 +1081,6 @@ void JSphGpu::PreInteractionVars_Forces(TpInter tinter,unsigned np,unsigned npb)
 void JSphGpu::PreInteraction_Forces(TpInter tinter){
   TmgStart(Timers,TMG_CfPreForces);
   //-Allocates memory.
-  printf("\n debut deb force \n ");
   ViscDtg=ArraysGpu->ReserveFloat();
   Arg=ArraysGpu->ReserveFloat();
   Aceg=ArraysGpu->ReserveFloat3();
@@ -1090,7 +1091,6 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
   }   
   if(TVisco==VISCO_LaminarSPS)SpsGradvelg=ArraysGpu->ReserveSymatrix3f();
   // Matthias
-  printf("ici");
   Pressg = ArraysGpu->ReserveFloat();
   Porec_M = ArraysGpu->ReserveFloat();
   Press3Dc = ArraysGpu->ReserveFloat3();
@@ -1121,7 +1121,6 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
   ViscDtMax=0;
   CheckCudaError("PreInteraction_Forces","Failed calculating VelMax.");
   TmgStop(Timers,TMG_CfPreForces);
-  printf("\n fin deb force \n ");
 }
 
 //==============================================================================
@@ -1130,7 +1129,6 @@ void JSphGpu::PreInteraction_Forces(TpInter tinter){
 //==============================================================================
 void JSphGpu::PosInteraction_Forces(){
   //-Frees memory allocated in PreInteraction_Forces().
-	printf("\n debut pref force \n ");
   ArraysGpu->Free(Arg);          Arg=NULL;
   ArraysGpu->Free(Aceg);         Aceg=NULL;
   ArraysGpu->Free(ViscDtg);      ViscDtg=NULL;
@@ -1149,7 +1147,6 @@ void JSphGpu::PosInteraction_Forces(){
   //Ellip
   ArraysGpu->Free(Ellipdot);  Ellipdot = NULL;
   ArraysGpu->Free(gradu_T);  gradu_T = NULL;
-  printf("\n fin pref force \n ");
 }
 
 //==============================================================================

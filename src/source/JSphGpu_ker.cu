@@ -1457,6 +1457,7 @@ __global__ void KerAddDelta(unsigned n,const float *delta,float *ar)
 void AddDelta(unsigned n,const float *delta,float *ar){
   if(n){
     dim3 sgrid=GetGridSize(n,SPHBSIZE);
+	printf("config = %d/%d", sgrid, SPHBSIZE);
     KerAddDelta <<<sgrid,SPHBSIZE>>> (n,delta,ar);
   }
 }

@@ -602,7 +602,7 @@ void JSphCpuSingle::RunRandomDivision_M() {
 		unsigned nmax = CpuParticlesSize - 1;
 
 		if (Np >= 0x80000000)RunException(met, "The number of particles is too big.");//-Because the last bit is used to mark the direction in which a new periodic particle is created / Pq el ultimo bit se usa para marcar el sentido en que se crea la nueva periodica.
-		unsigned count = 1; // Maximal number of division per turn
+		unsigned count = 1; // Maximal number of division per turn.
 
 		//-Redimension memory for particles if there is insufficient space and repeat the search process.
 		if (count > nmax || count + Np > CpuParticlesSize) {
@@ -1440,8 +1440,8 @@ void JSphCpuSingle::Run(std::string appname,JCfgRun *cfg,JLog2 *log){
     if(CaseNmoving)RunMotion(stepdt);
 
 	//Matthias - Cell division
-	//RunSizeDivision_M();
-	//RunDivisionDisplacement_M();
+	RunSizeDivision_M();
+	RunDivisionDisplacement_M();
 	RunCellDivide(true);
 
     TimeStep+=stepdt;

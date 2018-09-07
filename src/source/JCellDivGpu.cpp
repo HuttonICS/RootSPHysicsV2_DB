@@ -338,9 +338,18 @@ void JCellDivGpu::SortDataArrays(const double2 *a,const double *b,const float4 *
 }
 
 //==============================================================================
+/// Sort Lucas
+//==============================================================================
+void JCellDivGpu::SortDataArrays(const tsymatrix3f *a, const float *b, const tsymatrix3f *c, const float *d, const unsigned *e, const float *f, tsymatrix3f *a2, float *b2, tsymatrix3f *c2, float *d2, unsigned *e2, float *f2) {
+	const unsigned pini = (DivideFull ? 0 : NpbFinal);
+	cudiv::SortDataParticles(Nptot, pini, SortPart, a, b, c, d, e, f, a2, b2, c2, d2, e2,f2);
+}
+
+
+//=============================================================================
 /// Reorders data arrays according to SortPart (for type tsymatrix3f).
 /// Ordena arrays de datos segun SortPart (para tipo tsymatrix3f).
-//==============================================================================
+//=============================================================================
 void JCellDivGpu::SortDataArrays(const tsymatrix3f *a,tsymatrix3f *a2){
   const unsigned pini=(DivideFull? 0: NpbFinal);
   cudiv::SortDataParticles(Nptot,pini,SortPart,a,a2);
